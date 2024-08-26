@@ -77,9 +77,15 @@ def smoothen_argument(pd, argument, nn_k, threshold, below=True):
     return pd
 
 def get_distances(in_mesh, out_mesh, dist_thres=6.0, use_rotational_normals=False):
+    print("Reading mesh")
     pd = pv.read(in_mesh)
+    print("mesh read")
+
+    # centers = pd.cell_centers()
     centers = pd.cell_centers()
+    print("Getting cell centers")
     data2 = centers.points.copy()
+    print("copying done")
 
     print("Computing distances with respect to normal vectors (Normal vectors are slightly rotated)")
     min_dists, min_dists_orig = compute_distances_in_varied_normals(pd, use_rotational_normals=use_rotational_normals, add_const=dist_thres+1.)
@@ -137,6 +143,30 @@ def get_cell_data(pd):
         all_cell_points.append(cell_points)
     return np.stack(all_cell_points)
 
+def get_cell_data(pd):
+    print("Getting cell data. This is extremely inefficient!")
+    
+    # Initialize a cell array to store point coordinates for each cell
+    all_cell_points = []
+
+    # Loop over each cell in the PolyData
+    for i in range(pd.GetNumberOfCells()):
+        cell = pd.GetCell(i)
+        points = cell.GetPoints()
+
+        # Extract the point coordinates for this cell
+        cell_points = []
+        for j in range(points.GetNumberOfPoints()):
+            point = [0.0, 0.0, 0.0]
+            points.GetPoint(j, point)
+            cell_points.append(point)
+
+        # Add this cell's points to the list
+        all_cell_points.append(cell_points)
+
+    # Convert to a numpy array for easier handling later on
+    return np.array(all_cell_points)
+
 
 def get_appNapp_areas(out_mesh_curv_area_csv, out_mesh_curv_tops, exclude_tops=False, tops_thres=0.0, out_mesh_curv_area_sanity_mesh1=None, out_mesh_curv_area_sanity_mesh2=None, divide_stats_by2=False):
     print("Computing areas of appressed vs non-appressed regions!")
@@ -170,7 +200,7 @@ def get_appNapp_areas(out_mesh_curv_area_csv, out_mesh_curv_tops, exclude_tops=F
     print(napp_area)
     csv_data = np.expand_dims(np.array((app_area, napp_area)), 0)
     header = ['appressedArea', 'nonAppressedArea']
-    store_array_in_csv(out_mesh_curv_area_csv, csv_data, header=header)
+    store_array_in_csv(out_mesh_curv_area_csv, csv_data)
 
 
 def store_as_mesh(out_file, verts):
