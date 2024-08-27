@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import trimesh
 import starfile
 from membrain_pick.dataloading.data_utils import load_mesh_from_hdf5
@@ -22,17 +23,23 @@ def get_mesh_from_file(filename: str):
         verts = mesh_data["points"]
         faces = mesh_data["faces"]
         positions = mesh_data["cluster_centers"]
+        classes = np.zeros(len(positions), dtype=int)
     else:
         mesh = trimesh.load_mesh(filename)
         verts = mesh.vertices
         faces = mesh.faces
         pos_file = filename.replace(".obj", "_clusters.star")
         positions = starfile.read(pos_file)
+        if "rlnClassNumber" in positions.columns:
+            classes = positions["rlnClassNumber"].values
+        else:
+            classes = np.zeros(len(positions), dtype=int)
         positions = positions[["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]].values
     out_dict = {
         "verts": verts,
         "faces": faces,
         "positions": positions,
+        "classes": classes,
     }
     return out_dict
 
