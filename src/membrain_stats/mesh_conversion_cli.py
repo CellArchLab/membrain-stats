@@ -89,3 +89,53 @@ def protein_concentration(
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
     )
+
+    
+
+@cli.command(name="geodesic_NN", no_args_is_help=True)
+def protein_concentration(
+    in_folder: str = Option(  # noqa: B008
+        ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
+    ),
+    out_folder: str = Option(  # noqa: B008
+        "./stats/protein_centration", help="Path to the folder where computed stats should be stored."
+    ),
+    pixel_size_multiplier: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
+    ),
+    num_neighbors: int = Option(  # noqa: B008
+        1, help="Number of nearest neighbors to consider."
+    ),
+    start_classes: List[int] = Option(  # noqa: B008
+        [0], help="List of classes to consider for start points."
+    ),
+    target_classes: List[int] = Option(  # noqa: B008
+        [0], help="List of classes to consider for target points."
+    ),
+    method: str = Option(  # noqa: B008
+        "fast", help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'."
+    ),
+
+):
+    """Compute the protein concentration in all membrane meshes in a folder.
+
+    Example
+    -------
+    membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
+    """
+    
+    from membrain_stats.geodesic_distances import (
+        geodesic_nearest_neighbors_folder,
+    )
+    geodesic_nearest_neighbors_folder(
+        in_folder=in_folder,
+        out_folder=out_folder,
+        pixel_size_multiplier=pixel_size_multiplier,
+        num_neighbors=num_neighbors,
+        start_classes=start_classes,
+        target_classes=target_classes,
+        method=method,
+    )
+
+    
