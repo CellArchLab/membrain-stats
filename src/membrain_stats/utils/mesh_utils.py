@@ -19,3 +19,12 @@ def resort_mesh(
     # create the new faces
     new_faces = np.array([[mapping[old_index] for old_index in face] for face in faces])
     return new_verts, new_faces
+
+
+def find_closest_vertices(verts, points):
+    """Find the index of the closest vertex to a given point."""
+    if len(points.shape) == 1:
+        points = points[np.newaxis, :]
+    distances = np.linalg.norm(verts[:, np.newaxis] - points, axis=2)
+    return np.argmin(distances, axis=0)
+
