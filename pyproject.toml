@@ -40,6 +40,7 @@ dependencies = [
     "pyacvd",
     "scikit-learn",
     "potpourri3d",
+    "pygeodesic",
     "robust-laplacian"
 ]
 
