@@ -17,24 +17,25 @@ def get_mesh_filenames(in_folder: str):
     files = sorted(files)
     return files
 
-def get_mesh_from_file(filename: str):
+def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
+    pixel_size_multiplier = 1.0 if pixel_size_multiplier is None else pixel_size_multiplier
     if filename.endswith(".h5"):
         mesh_data = load_mesh_from_hdf5(filename)
-        verts = mesh_data["points"]
+        verts = mesh_data["points"] * pixel_size_multiplier
         faces = mesh_data["faces"]
-        positions = mesh_data["cluster_centers"]
+        positions = mesh_data["cluster_centers"] * pixel_size_multiplier
         classes = np.zeros(len(positions), dtype=int)
     else:
         mesh = trimesh.load_mesh(filename)
-        verts = mesh.vertices
+        verts = mesh.vertices * pixel_size_multiplier
         faces = mesh.faces
         pos_file = filename.replace(".obj", "_clusters.star")
-        positions = starfile.read(pos_file)
+        positions = starfile.read(pos_file) 
         if "rlnClassNumber" in positions.columns:
             classes = positions["rlnClassNumber"].values
         else:
             classes = np.zeros(len(positions), dtype=int)
-        positions = positions[["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]].values
+        positions = positions[["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]].values * pixel_size_multiplier
     out_dict = {
         "verts": verts,
         "faces": faces,
@@ -42,6 +43,24 @@ def get_mesh_from_file(filename: str):
         "classes": classes,
     }
     return out_dict
+
+def get_geodesic_distance_input(
+        mesh_dict: dict,
+        start_classes: list,
+        target_classes: list,
+        ):
+    """ Get the input for the geodesic distance computation."""
+    classes = mesh_dict["classes"]
+    class_start_mask = np.isin(classes, start_classes)
+    class_target_mask = np.isin(classes, target_classes)
+    positions_start = mesh_dict["positions"][class_start_mask]
+    positions_target = mesh_dict["positions"][class_target_mask]
+
+    mesh_dict["positions_start"] = positions_start
+    mesh_dict["positions_target"] = positions_target
+    return mesh_dict
+    
+
 
 def get_tmp_edge_files(
         out_folder: str,
