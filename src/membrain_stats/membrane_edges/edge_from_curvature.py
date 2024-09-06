@@ -36,13 +36,17 @@ def get_edge_mask(
     # find triangles with all vertices in the mask
     triangles = mesh.faces
     triangle_indices = np.arange(len(triangles))
-    triangle_mask = ~distance_mask[triangles].any(axis=1)
+    triangle_mask = distance_mask[triangles].all(axis=1)
     triangle_indices = triangle_indices[triangle_mask]
     new_triangles = triangles[triangle_indices]
 
     # resort the mesh
     new_verts, new_faces = resort_mesh(mesh.vertices, new_triangles)
     new_mesh = trimesh.Trimesh(vertices=new_verts, faces=new_faces)
+
+    # # store mesh in temporary file
+    # new_mesh.export("temp_edge_mesh.obj")
+    # exit()
 
     out = (new_mesh, )
     if return_triangle_mask:
