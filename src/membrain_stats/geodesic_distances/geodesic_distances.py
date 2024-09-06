@@ -1,5 +1,5 @@
 import numpy as np
-from membrain_stats.utils.mesh_utils import find_closest_vertices
+from membrain_stats.utils.mesh_utils import find_closest_vertices, split_mesh_into_connected_components
 
 
 class GeodesicDistanceSolver:
@@ -8,23 +8,39 @@ class GeodesicDistanceSolver:
         self.faces = faces
         self.method = method
 
-        if method == "exact":
-            import pygeodesic as geodesic
-            self.geoalg = geodesic.PyGeodesicAlgorithmExact(verts, faces)
-        elif method == "fast":
+        self.components = split_mesh_into_connected_components(verts, faces, return_face_mapping=True, return_vertex_mapping=True)
+        self.forward_vertex_mapping = self.components[4]
+        self.reverse_vertex_mapping = self.components[5]
+        self.solvers = []
+        if self.method == "exact":
+            from pygeodesic import geodesic
+            for component_verts, component_faces in zip(*self.components[:2]):
+                geoalg = geodesic.PyGeodesicAlgorithmExact(component_verts, component_faces)
+                self.solvers.append(geoalg)
+        elif self.method == "fast":
             import potpourri3d as pp3d
-            self.solver = pp3d.MeshHeatMethodDistanceSolver(V=verts, F=faces)
+            for component_verts, component_faces in zip(*self.components[:2]):
+                solver = pp3d.MeshHeatMethodDistanceSolver(V=component_verts, F=component_faces)
+                self.solvers.append(solver)
+
     
     def compute_geod_distance_matrix(self, point_idx):
+        # map point index to component index
+        component_idx, component_point_idx = self.forward_vertex_mapping[point_idx]
+        solver = self.solvers[component_idx]
         if self.method == "exact":
-            distances, _ = self.geoalg.geodesicDistances(
-                np.array([point_idx]), np.arange(len(self.verts))
+            distances, _ = solver.geodesicDistances(
+                np.array([component_point_idx]), np.arange(len(self.verts))
             )
         elif self.method == "fast":
-            distances = self.solver.compute_distance(point_idx)
+            distances = solver.compute_distance(component_point_idx)
+        distances[component_point_idx] = -1
 
-        distances[point_idx] = 1e5
-        return distances
+        # map back to original vertex indices
+        full_distances = np.full(len(self.verts), np.inf)
+        reverse_idcs = np.array([self.reverse_vertex_mapping[(component_idx, idx)] for idx in np.arange(len(distances))])
+        full_distances[reverse_idcs] = distances
+        return full_distances
 
 
 def compute_geodesic_distance_matrix(
@@ -33,6 +49,7 @@ def compute_geodesic_distance_matrix(
         point_coordinates: np.ndarray,
         point_coordinates_target: np.ndarray = None,
         method: str = "exact",
+        return_mesh_distances: bool = False,
 ):
     """Compute the geodesic distance matrix between two sets of points on a mesh.
 
@@ -64,19 +81,20 @@ def compute_geodesic_distance_matrix(
 
     if point_coordinates_target is None:
         point_coordinates_target = point_coordinates
-    point_idcs = [
-        find_closest_vertices(verts, point) for point in point_coordinates
-    ]
-    point_idcs_target = [
-        find_closest_vertices(verts, point) for point in point_coordinates_target
-    ]
-
+    point_idcs = find_closest_vertices(verts, point_coordinates).tolist()
+    point_idcs_target = find_closest_vertices(verts, point_coordinates_target).tolist()
     distance_matrix = np.zeros((len(point_idcs), len(point_idcs_target))).astype(
         np.float32
     )
+    if return_mesh_distances:
+        mesh_distances = []
     for i, point_idx in enumerate(point_idcs):
         distances = solver.compute_geod_distance_matrix(point_idx)
+        if return_mesh_distances:
+            mesh_distances.append(distances.copy())
         distances = distances[point_idcs_target]
-        distance_matrix[i] = distances[:, 0]
-
+        distance_matrix[i] = distances
+    if return_mesh_distances:
+        mesh_distances = np.array(mesh_distances)
+        return distance_matrix, mesh_distances
     return distance_matrix
