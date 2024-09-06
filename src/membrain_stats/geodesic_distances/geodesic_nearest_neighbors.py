@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from typing import List
 
-from membrain_stats.utils.io_utils import get_mesh_filenames, get_mesh_from_file
+from membrain_stats.utils.io_utils import get_mesh_filenames, get_mesh_from_file, get_geodesic_distance_input
 from membrain_stats.geodesic_distances import compute_geodesic_distance_matrix
 
 def geodesic_nearest_neighbors(
@@ -80,26 +80,18 @@ def geodesic_nearest_neighbors_folder(
         The method to use for computing geodesic distances. Can be either "exact" or "fast".
     """
     filenames = get_mesh_filenames(in_folder)
-    mesh_dicts = [get_mesh_from_file(filename) for filename in filenames]
-    vertices = [mesh_dict["verts"] for mesh_dict in mesh_dicts]
-    vertices = [vertices[i] * (1.0 if pixel_size_multiplier is None else pixel_size_multiplier) for i in range(len(vertices))]
-    faces = [mesh_dict["faces"] for mesh_dict in mesh_dicts]
-    positions = [mesh_dict["positions"] for mesh_dict in mesh_dicts]
-    classes = [mesh_dict["classes"] for mesh_dict in mesh_dicts]
-    class_start_masks = [np.isin(classes[i], start_classes) for i in range(len(classes))]
-    class_target_masks = [np.isin(classes[i], target_classes) for i in range(len(classes))]
-    positions_start = [positions[i][class_start_masks[i]] for i in range(len(positions))]
-    positions_target = [positions[i][class_target_masks[i]] for i in range(len(positions))]
+    mesh_dicts = [get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier) for filename in filenames]
+    mesh_dicts = [get_geodesic_distance_input(mesh_dict, start_classes, target_classes) for mesh_dict in mesh_dicts]
 
     nn_data = [
         geodesic_nearest_neighbors(
-            verts=vertices[i],
-            faces=faces[i],
-            point_coordinates=positions_start[i],
-            point_coordinates_target=positions_target[i],
+            verts=mesh_dicts[i]["verts"],
+            faces=mesh_dicts[i]["faces"],
+            point_coordinates=mesh_dicts[i]["positions_start"],
+            point_coordinates_target=mesh_dicts[i]["positions_target"],
             method=method,
             num_neighbors=num_neighbors,
-        ) for i in range(len(vertices))
+        ) for i in range(len(mesh_dicts))
     ]
     nearest_neighbor_indices = [data[0] for data in nn_data]
     nearest_neighbor_distances = [data[1] for data in nn_data]
@@ -108,20 +100,18 @@ def geodesic_nearest_neighbors_folder(
     for i in range(len(nearest_neighbor_indices)):
         out_data = {
             "filename": filenames[i],
-            "start_positionX": np.array(positions_start[i][:, 0]),
-            "start_positionY": np.array(positions_start[i][:, 1]),
-            "start_positionZ": np.array(positions_start[i][:, 2]),
+            "start_positionX": np.array(mesh_dicts[i]["positions_start"][:, 0]),
+            "start_positionY": np.array(mesh_dicts[i]["positions_start"][:, 1]),
+            "start_positionZ": np.array(mesh_dicts[i]["positions_start"][:, 2]),
         }
         for j in range(num_neighbors):
-            out_data[f"nn{j}_positionX"] = np.array(positions_target[i][nearest_neighbor_indices[i][:, j], 0])
-            out_data[f"nn{j}_positionY"] = np.array(positions_target[i][nearest_neighbor_indices[i][:, j], 1])
-            out_data[f"nn{j}_positionZ"] = np.array(positions_target[i][nearest_neighbor_indices[i][:, j], 2])
+            out_data[f"nn{j}_positionX"] = np.array(mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 0])
+            out_data[f"nn{j}_positionY"] = np.array(mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 1])
+            out_data[f"nn{j}_positionZ"] = np.array(mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 2])
             out_data[f"nn{j}_distance"] =  np.array(nearest_neighbor_distances[i][:, j])
         out_data = pd.DataFrame(out_data)
         out_token = os.path.basename(filenames[i]).split(".")[0]
         out_file = os.path.join(out_folder, f"{out_token}_nearest_neighbors.star")
         os.makedirs(out_folder, exist_ok=True)
         starfile.write(out_data, out_file)
-
-
 
