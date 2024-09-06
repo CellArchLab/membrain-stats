@@ -55,7 +55,7 @@ def protein_concentration(
         ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
     ),
     out_folder: str = Option(  # noqa: B008
-        "./stats/protein_centration", help="Path to the folder where computed stats should be stored."
+        "./stats/protein_concentration", help="Path to the folder where computed stats should be stored."
     ),
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
@@ -93,12 +93,12 @@ def protein_concentration(
     
 
 @cli.command(name="geodesic_NN", no_args_is_help=True)
-def protein_concentration(
+def geodesic_NN(
     in_folder: str = Option(  # noqa: B008
         ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
     ),
     out_folder: str = Option(  # noqa: B008
-        "./stats/protein_centration", help="Path to the folder where computed stats should be stored."
+        "./stats/geodesic_distances", help="Path to the folder where computed stats should be stored."
     ),
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
@@ -136,6 +136,58 @@ def protein_concentration(
         start_classes=start_classes,
         target_classes=target_classes,
         method=method,
+    )
+
+
+@cli.command(name="geodesic_ripley", no_args_is_help=True)
+def geodesic_ripley(
+    in_folder: str = Option(  # noqa: B008
+        ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
+    ),
+    out_folder: str = Option(  # noqa: B008
+        "./stats/geodesic_ripley", help="Path to the folder where computed stats should be stored."
+    ),
+    pixel_size_multiplier: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
+    ),
+    start_classes: List[int] = Option(  # noqa: B008
+        [0], help="List of classes to consider for start points."
+    ),
+    target_classes: List[int] = Option(  # noqa: B008
+        [0], help="List of classes to consider for target points."
+    ),
+    ripley_type: str = Option(  # noqa: B008
+        "O", help="Which type of Ripley statistic should be computed? Choose between O, L, and K"
+    ),
+    num_bins: int = Option(  # noqa: B008
+        50, help="Into how many bins should the ripley statistics be split?"
+    ),
+    method: str = Option(  # noqa: B008
+        "fast", help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'."
+    ),
+    exclude_edges: bool = Option(  # noqa: B008
+        False, help="If True, the edges of the membrane will be excluded from the area calculation."
+    ),
+    edge_exclusion_width: float = Option(  # noqa: B008
+        50., help="Width of the edge exclusion zone in Anstrom."
+    ),
+
+):
+    from membrain_stats.geodesic_distances import (
+        geodesic_ripleys_folder,
+    )
+    geodesic_ripleys_folder(
+        in_folder=in_folder,
+        out_folder=out_folder,
+        pixel_size_multiplier=pixel_size_multiplier,
+        start_classes=start_classes,
+        target_classes=target_classes,
+        ripley_type=ripley_type,
+        num_bins=num_bins,
+        method=method,
+        exclude_edges=exclude_edges,
+        edge_exclusion_width=edge_exclusion_width,
     )
 
     
