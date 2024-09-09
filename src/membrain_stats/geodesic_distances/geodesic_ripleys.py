@@ -7,7 +7,7 @@ from membrain_stats.utils.io_utils import (
     get_mesh_from_file,
     get_geodesic_distance_input,
 )
-from membrain_stats.geodesic_distances.ripley_helpers import (
+from membrain_stats.utils.ripley_utils import (
     compute_ripleys_stats,
     aggregate_ripleys_stats,
 )
