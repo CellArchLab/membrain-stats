@@ -7,7 +7,6 @@ from typing import List
 from typer import Option
 
 
-
 class OrderCommands(TyperGroup):
     """Return list of commands in the order appear."""
 
@@ -21,7 +20,7 @@ cli = typer.Typer(
     add_completion=True,
     no_args_is_help=True,
     rich_markup_mode="rich",
-    pretty_exceptions_show_locals=False
+    pretty_exceptions_show_locals=False,
 )
 OPTION_PROMPT_KWARGS = {"prompt": True, "prompt_required": True}
 PKWARGS = OPTION_PROMPT_KWARGS
@@ -41,34 +40,38 @@ def callback():
 
     Example:
     -------
-    membrain-pick process-folder --mb-folder <path-to-your-folder> --tomo-path <path-to-tomo> 
+    membrain-pick process-folder --mb-folder <path-to-your-folder> --tomo-path <path-to-tomo>
         --output-folder <path-to-store-meshes>
 
     -------
     """
 
 
-
 @cli.command(name="protein_concentration", no_args_is_help=True)
 def protein_concentration(
     in_folder: str = Option(  # noqa: B008
-        ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
+        ...,
+        help="Path to the directory containing either .h5 files or .obj and .star files",
+        **PKWARGS,
     ),
     out_folder: str = Option(  # noqa: B008
-        "./stats/protein_concentration", help="Path to the folder where computed stats should be stored."
+        "./stats/protein_concentration",
+        help="Path to the folder where computed stats should be stored.",
     ),
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
     ),
     only_one_side: bool = Option(  # noqa: B008
-        False, help="If True, only one side of the membrane will be considered for area calculation."
+        False,
+        help="If True, only one side of the membrane will be considered for area calculation.",
     ),
     exclude_edges: bool = Option(  # noqa: B008
-        False, help="If True, the edges of the membrane will be excluded from the area calculation."
+        False,
+        help="If True, the edges of the membrane will be excluded from the area calculation.",
     ),
     edge_exclusion_width: float = Option(  # noqa: B008
-        50., help="Width of the edge exclusion zone in Anstrom."
+        50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
 ):
     """Compute the protein concentration in all membrane meshes in a folder.
@@ -77,10 +80,11 @@ def protein_concentration(
     -------
     membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
     """
-    
+
     from membrain_stats.protein_concentration import (
         protein_concentration_folder,
     )
+
     protein_concentration_folder(
         in_folder=in_folder,
         out_folder=out_folder,
@@ -90,15 +94,82 @@ def protein_concentration(
         edge_exclusion_width=edge_exclusion_width,
     )
 
-    
+
+@cli.command(name="protein_concentration_wrt", no_args_is_help=True)
+def protein_concentration(
+    in_folder: str = Option(  # noqa: B008
+        ...,
+        help="Path to the directory containing either .h5 files or .obj and .star files",
+        **PKWARGS,
+    ),
+    out_folder: str = Option(  # noqa: B008
+        "./stats/protein_concentration",
+        help="Path to the folder where computed stats should be stored.",
+    ),
+    pixel_size_multiplier: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
+    ),
+    exclude_edges: bool = Option(  # noqa: B008
+        False,
+        help="If True, the edges of the membrane will be excluded from the area calculation.",
+    ),
+    edge_exclusion_width: float = Option(  # noqa: B008
+        50.0, help="Width of the edge exclusion zone in Anstrom."
+    ),
+    num_bins: int = Option(  # noqa: B008
+        25, help="Number of bins to use for the histogram."
+    ),
+    consider_classes: List[int] = Option(  # noqa: B008
+        [-1],
+        help="List of classes to consider for protein concentration calculation. If set to -1, all classes will be considered.",
+    ),
+    with_respect_to_class: int = Option(  # noqa: B008
+        0, help="Class with respect to which protein concentration should be computed."
+    ),
+    geod_distance_method: str = Option(  # noqa: B008
+        "exact",
+        help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'.",
+    ),
+    distance_matrix_method: str = Option(  # noqa: B008
+        "geodesic",
+        help="Method to use for computing the distance matrix. Can be either 'geodesic' or 'euclidean'.",
+    ),
+):
+    """Compute the protein concentration in all membrane meshes in a folder.
+
+    Example
+    -------
+    membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
+    """
+
+    from membrain_stats.protein_concentration import (
+        protein_concentration_wrt_folder,
+    )
+
+    protein_concentration_wrt_folder(
+        in_folder=in_folder,
+        out_folder=out_folder,
+        pixel_size_multiplier=pixel_size_multiplier,
+        exclude_edges=exclude_edges,
+        edge_exclusion_width=edge_exclusion_width,
+        consider_classes=consider_classes,
+        with_respect_to_class=with_respect_to_class,
+        geod_distance_method=geod_distance_method,
+        distance_matrix_method=distance_matrix_method,
+    )
+
 
 @cli.command(name="geodesic_NN", no_args_is_help=True)
 def geodesic_NN(
     in_folder: str = Option(  # noqa: B008
-        ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
+        ...,
+        help="Path to the directory containing either .h5 files or .obj and .star files",
+        **PKWARGS,
     ),
     out_folder: str = Option(  # noqa: B008
-        "./stats/geodesic_distances", help="Path to the folder where computed stats should be stored."
+        "./stats/geodesic_distances",
+        help="Path to the folder where computed stats should be stored.",
     ),
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
@@ -114,9 +185,9 @@ def geodesic_NN(
         [0], help="List of classes to consider for target points."
     ),
     method: str = Option(  # noqa: B008
-        "fast", help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'."
+        "fast",
+        help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'.",
     ),
-
 ):
     """Compute the protein concentration in all membrane meshes in a folder.
 
@@ -124,10 +195,11 @@ def geodesic_NN(
     -------
     membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
     """
-    
+
     from membrain_stats.geodesic_distances import (
         geodesic_nearest_neighbors_folder,
     )
+
     geodesic_nearest_neighbors_folder(
         in_folder=in_folder,
         out_folder=out_folder,
@@ -142,10 +214,13 @@ def geodesic_NN(
 @cli.command(name="geodesic_ripley", no_args_is_help=True)
 def geodesic_ripley(
     in_folder: str = Option(  # noqa: B008
-        ..., help="Path to the directory containing either .h5 files or .obj and .star files", **PKWARGS
+        ...,
+        help="Path to the directory containing either .h5 files or .obj and .star files",
+        **PKWARGS,
     ),
     out_folder: str = Option(  # noqa: B008
-        "./stats/geodesic_ripley", help="Path to the folder where computed stats should be stored."
+        "./stats/geodesic_ripley",
+        help="Path to the folder where computed stats should be stored.",
     ),
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
@@ -158,25 +233,28 @@ def geodesic_ripley(
         [0], help="List of classes to consider for target points."
     ),
     ripley_type: str = Option(  # noqa: B008
-        "O", help="Which type of Ripley statistic should be computed? Choose between O, L, and K"
+        "O",
+        help="Which type of Ripley statistic should be computed? Choose between O, L, and K",
     ),
     num_bins: int = Option(  # noqa: B008
         50, help="Into how many bins should the ripley statistics be split?"
     ),
     method: str = Option(  # noqa: B008
-        "fast", help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'."
+        "fast",
+        help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'.",
     ),
     exclude_edges: bool = Option(  # noqa: B008
-        False, help="If True, the edges of the membrane will be excluded from the area calculation."
+        False,
+        help="If True, the edges of the membrane will be excluded from the area calculation.",
     ),
     edge_exclusion_width: float = Option(  # noqa: B008
-        50., help="Width of the edge exclusion zone in Anstrom."
+        50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
-
 ):
     from membrain_stats.geodesic_distances import (
         geodesic_ripleys_folder,
     )
+
     geodesic_ripleys_folder(
         in_folder=in_folder,
         out_folder=out_folder,
@@ -189,5 +267,3 @@ def geodesic_ripley(
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
     )
-
-    
