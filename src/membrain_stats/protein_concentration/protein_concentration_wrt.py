@@ -8,16 +8,11 @@ import trimesh
 from membrain_stats.utils.io_utils import (
     get_mesh_filenames,
     get_mesh_from_file,
-    get_tmp_edge_files,
 )
 from membrain_stats.membrane_edges.edge_from_curvature import (
     exclude_edges_from_mesh,
 )
-from membrain_stats.geodesic_distances.geodesic_distances import (
-    compute_euclidean_distance_matrix,
-    compute_geodesic_distance_matrix,
-)
-from membrain_stats.utils.mesh_utils import barycentric_area_per_vertex
+from membrain_stats.utils.wrt_utils import get_wrt_inputs
 
 
 def protein_concentration_wrt_folder(
@@ -58,70 +53,21 @@ def protein_concentration_wrt_folder(
             for filename, mesh_dict in zip(filenames, mesh_dicts)
         ]
 
-    protein_classes = [mesh_dict["classes"] for mesh_dict in mesh_dicts]
-    wrt_positions = [
-        mesh_dict["positions"][mesh_dict["classes"] == with_respect_to_class]
-        for mesh_dict in mesh_dicts
-    ]
-    if -1 in consider_classes:
-        masks = [classes != with_respect_to_class for classes in protein_classes]
-        edge_masks = [classes != -1 for classes in protein_classes]
-        masks = [mask & edge_mask for mask, edge_mask in zip(masks, edge_masks)]
-    else:
-        masks = [np.isin(classes, consider_classes) for classes in protein_classes]
-    consider_positions = [
-        mesh_dict["positions"][mask] for mask, mesh_dict in zip(masks, mesh_dicts)
-    ]
-
-    if distance_matrix_method == "geodesic":
-        distance_matrix_outputs = [
-            compute_geodesic_distance_matrix(
-                verts=mesh.vertices,
-                faces=mesh.faces,
-                point_coordinates=wrt_positions[i],
-                point_coordinates_target=consider_positions[i],
-                method=geod_distance_method,
-                return_mesh_distances=True,
-            )
-            for i, mesh in enumerate(meshes)
-        ]
-    elif distance_matrix_method == "euclidean":
-        distance_matrix_outputs = [
-            compute_euclidean_distance_matrix(
-                verts=mesh.vertices,
-                point_coordinates=wrt_positions[i],
-                point_coordinates_target=consider_positions[i],
-                return_mesh_distances=True,
-            )
-            for i, mesh in enumerate(meshes)
-        ]
-
-    distance_matrices = [output[0] for output in distance_matrix_outputs]
-    mesh_distances = [output[1] for output in distance_matrix_outputs]
-
-    protein_nearest_wrt_distances = [
-        np.min(distance_matrix, axis=1) for distance_matrix in distance_matrices
-    ]
-
-    mesh_barycentric_areas = [barycentric_area_per_vertex(mesh) for mesh in meshes]
-
-    # sort protein distances
-    protein_nearest_wrt_distances = np.concatenate(protein_nearest_wrt_distances)
-    protein_nearest_wrt_distances = np.sort(protein_nearest_wrt_distances)
-
-    mesh_barycentric_areas = [
-        np.repeat(barycentric_area, len(mesh_dist))
-        for barycentric_area, mesh_dist in zip(mesh_barycentric_areas, mesh_distances)
-    ]
-    # flatten and concatenate
-    mesh_barycentric_areas = np.concatenate(mesh_barycentric_areas)
-    mesh_distances = [np.ravel(mesh_dist) for mesh_dist in mesh_distances]
-    mesh_distances = np.concatenate(mesh_distances, axis=0)
+    protein_nearest_wrt_distances, mesh_barycentric_areas, mesh_distances = (
+        get_wrt_inputs(
+            mesh_dicts=mesh_dicts,
+            meshes=meshes,
+            consider_classes=consider_classes,
+            with_respect_to_class=with_respect_to_class,
+            geod_distance_method=geod_distance_method,
+            distance_matrix_method=distance_matrix_method,
+        )
+    )
 
     bins = np.linspace(0, np.max(protein_nearest_wrt_distances), num_bins)
-    x_data = np.histogram(protein_nearest_wrt_distances, bins=bins)[0]
+    hist = np.histogram(protein_nearest_wrt_distances, bins=bins)[0]
     y_data = []
-    for num_bin, protein_numbers in enumerate(x_data):
+    for num_bin, protein_numbers in enumerate(hist):
         bin_lower = bins[num_bin]
         bin_upper = bins[num_bin + 1]
         area_mask = (mesh_distances >= bin_lower) & (mesh_distances < bin_upper)
@@ -134,3 +80,11 @@ def protein_concentration_wrt_folder(
     plt.xlabel("Distance to nearest protein")
     plt.ylabel("Area covered")
     plt.savefig("./protein_concentration.png")
+
+    out_data = {
+        "bin_lower": bins[:-1],
+        "bin_upper": bins[1:],
+        "concentration": y_data,
+    }
+    out_data = pd.DataFrame(out_data)
+    starfile.write(out_data, os.path.join(out_folder, "protein_concentration_wrt.star"))
