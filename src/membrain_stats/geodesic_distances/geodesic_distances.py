@@ -1,5 +1,9 @@
 import numpy as np
-from membrain_stats.utils.mesh_utils import find_closest_vertices, split_mesh_into_connected_components
+from scipy.spatial.distance import cdist
+from membrain_stats.utils.mesh_utils import (
+    find_closest_vertices,
+    split_mesh_into_connected_components,
+)
 
 
 class GeodesicDistanceSolver:
@@ -8,22 +12,29 @@ class GeodesicDistanceSolver:
         self.faces = faces
         self.method = method
 
-        self.components = split_mesh_into_connected_components(verts, faces, return_face_mapping=True, return_vertex_mapping=True)
+        self.components = split_mesh_into_connected_components(
+            verts, faces, return_face_mapping=True, return_vertex_mapping=True
+        )
         self.forward_vertex_mapping = self.components[4]
         self.reverse_vertex_mapping = self.components[5]
         self.solvers = []
         if self.method == "exact":
             from pygeodesic import geodesic
+
             for component_verts, component_faces in zip(*self.components[:2]):
-                geoalg = geodesic.PyGeodesicAlgorithmExact(component_verts, component_faces)
+                geoalg = geodesic.PyGeodesicAlgorithmExact(
+                    component_verts, component_faces
+                )
                 self.solvers.append(geoalg)
         elif self.method == "fast":
             import potpourri3d as pp3d
+
             for component_verts, component_faces in zip(*self.components[:2]):
-                solver = pp3d.MeshHeatMethodDistanceSolver(V=component_verts, F=component_faces)
+                solver = pp3d.MeshHeatMethodDistanceSolver(
+                    V=component_verts, F=component_faces
+                )
                 self.solvers.append(solver)
 
-    
     def compute_geod_distance_matrix(self, point_idx):
         # map point index to component index
         component_idx, component_point_idx = self.forward_vertex_mapping[point_idx]
@@ -38,18 +49,23 @@ class GeodesicDistanceSolver:
 
         # map back to original vertex indices
         full_distances = np.full(len(self.verts), np.inf)
-        reverse_idcs = np.array([self.reverse_vertex_mapping[(component_idx, idx)] for idx in np.arange(len(distances))])
+        reverse_idcs = np.array(
+            [
+                self.reverse_vertex_mapping[(component_idx, idx)]
+                for idx in np.arange(len(distances))
+            ]
+        )
         full_distances[reverse_idcs] = distances
         return full_distances
 
 
 def compute_geodesic_distance_matrix(
-        verts: np.ndarray,
-        faces: np.ndarray,
-        point_coordinates: np.ndarray,
-        point_coordinates_target: np.ndarray = None,
-        method: str = "exact",
-        return_mesh_distances: bool = False,
+    verts: np.ndarray,
+    faces: np.ndarray,
+    point_coordinates: np.ndarray,
+    point_coordinates_target: np.ndarray = None,
+    method: str = "exact",
+    return_mesh_distances: bool = False,
 ):
     """Compute the geodesic distance matrix between two sets of points on a mesh.
 
@@ -73,9 +89,9 @@ def compute_geodesic_distance_matrix(
 
     Note
     -------
-    This function has been reproduced from 
+    This function has been reproduced from
     github.com/cellcanvas/surforama/blob/main/src/surforama/utils/stats.py
-    
+
     """
     solver = GeodesicDistanceSolver(verts, faces, method=method)
 
@@ -96,5 +112,41 @@ def compute_geodesic_distance_matrix(
         distance_matrix[i] = distances
     if return_mesh_distances:
         mesh_distances = np.array(mesh_distances)
+        return distance_matrix, mesh_distances
+    return distance_matrix
+
+
+def compute_euclidean_distance_matrix(
+    verts: np.ndarray,
+    point_coordinates: np.ndarray,
+    point_coordinates_target: np.ndarray = None,
+    return_mesh_distances: bool = False,
+):
+    """Compute the euclidean distance matrix between two sets of points.
+
+    Parameters
+    ----------
+    verts : np.ndarray
+        The vertices of the mesh.
+    point_coordinates : np.ndarray
+        The coordinates of the points for which the euclidean distances should be computed.
+    point_coordinates_target : np.ndarray
+        The coordinates of the target points for which the euclidean distances should be computed.
+
+    Returns
+    -------
+    np.ndarray
+        The euclidean distance matrix between the points.
+
+    """
+    if point_coordinates_target is None:
+        point_coordinates_target = point_coordinates
+    distance_matrix = cdist(point_coordinates, point_coordinates_target)
+
+    if return_mesh_distances:
+        mesh_distances = np.zeros((len(verts), len(point_coordinates)))
+        for i, point in enumerate(point_coordinates):
+            mesh_distances[:, i] = np.linalg.norm(verts - point, axis=1)
+        mesh_distances = mesh_distances.T
         return distance_matrix, mesh_distances
     return distance_matrix
