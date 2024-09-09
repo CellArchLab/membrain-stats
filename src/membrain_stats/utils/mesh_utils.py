@@ -2,6 +2,7 @@ import numpy as np
 import trimesh
 from trimesh.graph import connected_components, face_adjacency
 
+
 def resort_mesh(
         verts: np.ndarray, 
         faces: np.ndarray,
@@ -87,3 +88,5 @@ def split_mesh_into_connected_components(verts, faces, return_face_mapping=False
     if return_vertex_mapping:
         out += (forward_vertex_mapping, reverse_vertex_mapping,)
     return out
+
+
