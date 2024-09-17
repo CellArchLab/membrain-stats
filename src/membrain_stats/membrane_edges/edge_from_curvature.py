@@ -13,10 +13,11 @@ def get_edge_mask(
     return_triangle_mask: bool = False,
     return_vertex_mask: bool = False,
     temp_file: str = None,
+    force_recompute: bool = False,
 ):
     """Find edges via high curvature regions and otsu thresholding."""
     curvature = None
-    if temp_file is not None:
+    if temp_file is not None and not force_recompute:
         if os.path.exists(temp_file):
             curvature = np.load(temp_file)
 
@@ -85,7 +86,12 @@ def filter_edge_positions(
 
 
 def exclude_edges_from_mesh(
-    out_folder, filename, mesh_dict, edge_exclusion_width, leave_classes=None
+    out_folder,
+    filename,
+    mesh_dict,
+    edge_exclusion_width,
+    leave_classes=None,
+    force_recompute=False,
 ):
     # get temp_filename (will be created if non-existent)
     out_file_edges = get_tmp_edge_files(out_folder, [filename])[0]
@@ -100,6 +106,7 @@ def exclude_edges_from_mesh(
         edge_exclusion_width=edge_exclusion_width,
         temp_file=out_file_edges,
         return_vertex_mask=True,
+        force_recompute=force_recompute,
     )
     edge_vertex_mask = mesh[1]
     mesh = mesh[0]
