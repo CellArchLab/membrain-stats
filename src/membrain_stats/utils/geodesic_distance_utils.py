@@ -94,7 +94,6 @@ def compute_geodesic_distance_matrix(
 
     """
     solver = GeodesicDistanceSolver(verts, faces, method=method)
-
     if point_coordinates_target is None:
         point_coordinates_target = point_coordinates
     point_idcs = find_closest_vertices(verts, point_coordinates).tolist()

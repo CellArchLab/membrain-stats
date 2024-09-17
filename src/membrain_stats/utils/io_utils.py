@@ -65,6 +65,7 @@ def get_geodesic_distance_input(
     classes = mesh_dict["classes"]
     class_start_mask = np.isin(classes, start_classes)
     class_target_mask = np.isin(classes, target_classes)
+
     positions_start = mesh_dict["positions"][class_start_mask]
     positions_target = mesh_dict["positions"][class_target_mask]
 
