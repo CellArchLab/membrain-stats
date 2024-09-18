@@ -43,6 +43,12 @@ def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
             classes = positions["rlnClassNumber"].values
         else:
             classes = np.zeros(len(positions), dtype=int)
+        if "rlnAngleRot" in positions.columns:
+            angles = positions[["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]].values
+            hasAngles = True
+        else:
+            angles = np.zeros((len(positions), 3))
+            hasAngles = False
         positions = (
             positions[["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]].values
             # * pixel_size_multiplier
@@ -52,6 +58,8 @@ def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
         "faces": faces,
         "positions": positions,
         "classes": classes,
+        "angles": angles,
+        "hasAngles": hasAngles,
     }
     return out_dict
 
@@ -69,8 +77,14 @@ def get_geodesic_distance_input(
     positions_start = mesh_dict["positions"][class_start_mask]
     positions_target = mesh_dict["positions"][class_target_mask]
 
+    angles_start = mesh_dict["angles"][class_start_mask]
+    angles_target = mesh_dict["angles"][class_target_mask]
+
     mesh_dict["positions_start"] = positions_start
     mesh_dict["positions_target"] = positions_target
+    mesh_dict["angles_start"] = angles_start
+    mesh_dict["angles_target"] = angles_target
+
     return mesh_dict
 
 

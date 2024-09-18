@@ -14,6 +14,46 @@ from membrain_stats.utils.geodesic_distance_utils import (
 )
 
 
+def orientations_of_knn_inplane(distance_matrix, feature_table, k=3, c2_symmetry=False):
+    """
+    Compute the angular differences between the up vectors of a point and its k nearest neighbors.
+
+    The angular differences are computed in degrees and are in the range [0, 180] if c2_symmetry is False
+    and in the range [0, 90] if c2_symmetry is True.
+
+    Parameters
+    ----------
+    distance_matrix : np.ndarray
+        The distance matrix between the points.
+    feature_table : pd.DataFrame
+        The feature table containing the up vectors of the points.
+    k : int
+        The number of nearest neighbors to consider.
+    c2_symmetry : bool
+        Whether to consider the c2 symmetry of the up vectors.
+        (implies C2 symmetry of the respective protein)
+
+    Returns
+    -------
+    list
+        A list of angular differences for each point. (in degrees)
+    """
+    up_vectors = feature_table[[NAPARI_UP_0, NAPARI_UP_1, NAPARI_UP_2]].to_numpy()
+    nn_orientations = []
+    for i in range(distance_matrix.shape[0]):
+        start_vector = up_vectors[i]
+        nn_idx = np.argsort(distance_matrix[i])[:k]
+        cosine_similarities = np.degrees(
+            np.arccos(np.dot(start_vector, up_vectors[nn_idx].T))
+        )
+        if c2_symmetry:
+            cosine_similarities = np.minimum(
+                cosine_similarities, 180 - cosine_similarities
+            )
+        nn_orientations.append(cosine_similarities)
+    return np.array(nn_orientations)
+
+
 def geodesic_nearest_neighbors(
     verts: np.ndarray,
     faces: np.ndarray,
@@ -21,6 +61,7 @@ def geodesic_nearest_neighbors(
     point_coordinates_target: np.ndarray,
     method: str = "fast",
     num_neighbors: int = 1,
+    compute_angles: bool = False,
 ):
     """
     Compute the geodesic nearest neighbors for a single mesh.
@@ -169,6 +210,10 @@ def geodesic_nearest_neighbors_folder(
             "start_positionY": np.array(mesh_dicts[i]["positions_start"][:, 1]),
             "start_positionZ": np.array(mesh_dicts[i]["positions_start"][:, 2]),
         }
+        if mesh_dicts[i]["hasAngles"]:
+            out_data["start_angleRot"] = np.array(mesh_dicts[i]["angles"][:, 0])
+            out_data["start_angleTilt"] = np.array(mesh_dicts[i]["angles"][:, 1])
+            out_data["start_anglePsi"] = np.array(mesh_dicts[i]["angles"][:, 2])
         for j in range(num_neighbors):
             out_data[f"nn{j}_positionX"] = np.array(
                 mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 0]
@@ -179,6 +224,16 @@ def geodesic_nearest_neighbors_folder(
             out_data[f"nn{j}_positionZ"] = np.array(
                 mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 2]
             )
+            if mesh_dicts[i]["hasAngles"]:
+                out_data[f"nn{j}_angleRot"] = np.array(
+                    mesh_dicts[i]["angles"][nearest_neighbor_indices[i][:, j], 0]
+                )
+                out_data[f"nn{j}_angleTilt"] = np.array(
+                    mesh_dicts[i]["angles"][nearest_neighbor_indices[i][:, j], 1]
+                )
+                out_data[f"nn{j}_anglePsi"] = np.array(
+                    mesh_dicts[i]["angles"][nearest_neighbor_indices[i][:, j], 2]
+                )
             out_data[f"nn{j}_distance"] = np.array(nearest_neighbor_distances[i][:, j])
         out_data = pd.DataFrame(out_data)
         out_token = os.path.basename(filenames[i]).split(".")[0]
