@@ -86,6 +86,7 @@ def geodesic_nearest_neighbors_wrt_folder(
 ):
     """ """
     filenames = get_mesh_filenames(in_folder)
+
     mesh_dicts = [
         get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier)
         for filename in filenames
@@ -155,3 +156,13 @@ def geodesic_nearest_neighbors_wrt_folder(
     out_data = pd.DataFrame(out_data)
     out_file = os.path.join(out_folder, "nearest_neighbor_distances_wrt_bins.star")
     starfile.write(out_data, out_file)
+
+    # store image
+    from matplotlib import pyplot as plt
+
+    plt.figure()
+    plt.plot(bins[:-1], y_data)
+    plt.xlabel("Distance to nearest protein")
+    plt.ylabel("Mean distance to nearest neighbor")
+    plt.savefig("nearest_neighbor_distances_wrt_bins.png")
+    plt.close()
