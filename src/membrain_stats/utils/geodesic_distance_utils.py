@@ -66,6 +66,7 @@ def compute_geodesic_distance_matrix(
     point_coordinates_target: np.ndarray = None,
     method: str = "exact",
     return_mesh_distances: bool = False,
+    infinite_distance_for_pointless_areas: bool = True,
 ):
     """Compute the geodesic distance matrix between two sets of points on a mesh.
 
@@ -106,9 +107,12 @@ def compute_geodesic_distance_matrix(
         mesh_distances = []
     for i, point_idx in enumerate(point_idcs):
         distances = solver.compute_geod_distance_matrix(point_idx)
-        if return_mesh_distances:
-            mesh_distances.append(distances.copy())
+        cur_mesh_distances = distances.copy()
         distances = distances[point_idcs_target]
+        if return_mesh_distances:
+            if infinite_distance_for_pointless_areas and np.all(np.isinf(distances)):
+                cur_mesh_distances = np.full(len(verts), np.inf)
+            mesh_distances.append(cur_mesh_distances)
         distance_matrix[i] = distances
     if return_mesh_distances:
         mesh_distances = np.array(mesh_distances)
