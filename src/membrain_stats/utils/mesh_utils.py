@@ -1,3 +1,5 @@
+from collections import defaultdict
+from typing import List
 import numpy as np
 import trimesh
 from trimesh.graph import connected_components, face_adjacency
@@ -53,18 +55,113 @@ def barycentric_area_per_vertex(mesh: trimesh.Trimesh):
     return areas
 
 
+def check_mappings(
+    orig_verts: np.ndarray,
+    orig_faces: np.ndarray,
+    component_verts: List[np.ndarray],
+    component_faces: List[np.ndarray],
+    forward_vertex_mapping: dict,
+    reverse_vertex_mapping: dict,
+    forward_face_mapping: dict,
+    reverse_face_mapping: dict,
+):
+    """Check that the mappings are correct.
+    Supposed behaviors:
+    - forward_vertex_mapping[vertex_idx] = (component_idx, component_vertex_idx)
+    - reverse_vertex_mapping[(component_idx, component_vertex_idx)] = vertex_idx
+    - forward_face_mapping[face_idx] = (component_idx, component_face_idx)
+    - reverse_face_mapping[(component_idx, component_face_idx)] = face_idx
+    These mappings should be bijections.
+    """
+    # check forward mappings defined for all vertices
+    assert len(forward_vertex_mapping) == len(orig_verts)
+    # check reverse mappings defined for all forward mappings
+    assert len(reverse_vertex_mapping) == len(forward_vertex_mapping)
+    # check forward mappings defined for all faces
+    assert len(forward_face_mapping) == len(orig_faces)
+    # check reverse mappings defined for all forward mappings
+    assert len(reverse_face_mapping) == len(forward_face_mapping)
+    # check that the forward mappings are bijections
+    assert len(set(forward_vertex_mapping.values())) == len(forward_vertex_mapping)
+    assert len(set(forward_face_mapping.values())) == len(forward_face_mapping)
+    # check that the reverse mappings are bijections
+    assert len(set(reverse_vertex_mapping.values())) == len(reverse_vertex_mapping)
+    assert len(set(reverse_face_mapping.values())) == len(reverse_face_mapping)
+    # check that the forward and reverse mappings are inverses
+    for vertex_idx, (
+        component_idx,
+        component_vertex_idx,
+    ) in forward_vertex_mapping.items():
+        assert (
+            reverse_vertex_mapping[(component_idx, component_vertex_idx)] == vertex_idx
+        )
+    for face_idx, (component_idx, component_face_idx) in forward_face_mapping.items():
+        assert reverse_face_mapping[(component_idx, component_face_idx)] == face_idx
+    # check that the vertices and faces are correctly mapped
+    for component_idx, (component_verts, component_faces) in enumerate(
+        zip(component_verts, component_faces)
+    ):
+        for component_vertex_idx, component_vertex in enumerate(component_verts):
+            vertex_idx = reverse_vertex_mapping[(component_idx, component_vertex_idx)]
+            assert np.allclose(orig_verts[vertex_idx], component_vertex)
+        for component_face_idx, component_face in enumerate(component_faces):
+            face_idx = reverse_face_mapping[(component_idx, component_face_idx)]
+            assert np.allclose(orig_faces[face_idx], component_face)
+
+
+def vertex_adjacency(faces):
+    """
+    Returns an (n, 2) list of face indices.
+    Each pair of faces in the list shares a vertex, making them adjacent.
+    """
+    adjacency = []
+    for face_idx, face in enumerate(faces):
+        for vertex in face:
+            adjacent_faces = np.argwhere(np.isin(faces, vertex)).flatten()
+            adjacency.extend(
+                [(face_idx, adj_face_idx) for adj_face_idx in adjacent_faces]
+            )
+    return np.array(adjacency)
+
+
+def vertex_adjacency(faces):
+    """
+    Returns an (n, 2) array of face indices.
+    Each pair of faces in the list shares a vertex, making them adjacent.
+    """
+    # Dictionary to map each vertex to the faces that contain it
+    vertex_to_faces = defaultdict(list)
+
+    # Step 1: Build the vertex-to-face mapping
+    for face_idx, face in enumerate(faces):
+        for vertex in face:
+            vertex_to_faces[vertex].append(face_idx)
+
+    adjacency = set()  # Use a set to avoid duplicate pairs
+
+    # Step 2: Create adjacency list from the vertex-to-face map
+    for adjacent_faces in vertex_to_faces.values():
+        # Sort face indices to avoid creating duplicate (a, b) and (b, a) pairs
+        for i in range(len(adjacent_faces)):
+            for j in range(
+                i + 1, len(adjacent_faces)
+            ):  # Ensure adj_face_idx > face_idx
+                adjacency.add((adjacent_faces[i], adjacent_faces[j]))
+
+    # Convert the set to a numpy array for consistency
+    return np.array(list(adjacency))
+
+
 def split_mesh_into_connected_components(
     verts, faces, return_face_mapping=False, return_vertex_mapping=False
 ):
-    adjacency = face_adjacency(faces)
-
+    adjacency = vertex_adjacency(faces)
     components = connected_components(adjacency)
 
     component_face_idcs = [
         np.argwhere(np.isin(np.arange(len(faces)), component)).flatten()
         for component in components
     ]
-
     # if only one component, add unused faces to the last component
     if len(component_face_idcs) == 1:
         unused_faces = np.setdiff1d(np.arange(len(faces)), component_face_idcs[0])
@@ -113,6 +210,16 @@ def split_mesh_into_connected_components(
         ) in forward_vertex_mapping.items()
     }
 
+    check_mappings(
+        verts,
+        faces,
+        component_verts,
+        component_faces,
+        forward_vertex_mapping,
+        reverse_vertex_mapping,
+        forward_face_mapping,
+        reverse_face_mapping,
+    )
     out = (component_verts, component_faces)
     if return_face_mapping:
         out += (
