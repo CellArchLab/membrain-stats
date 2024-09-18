@@ -117,6 +117,10 @@ def protein_concentration_wrt(
     edge_exclusion_width: float = Option(  # noqa: B008
         50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
+    only_one_side: bool = Option(  # noqa: B008
+        False,
+        help="If True, only one side of the membrane will be considered for area calculation. Works only if exclude_edges is False.",
+    ),
     num_bins: int = Option(  # noqa: B008
         25, help="Number of bins to use for the histogram."
     ),
@@ -147,12 +151,17 @@ def protein_concentration_wrt(
         protein_concentration_wrt_folder,
     )
 
+    assert not (
+        only_one_side and exclude_edges
+    ), "Only one of only_one_side and exclude_edges can be True."
+
     protein_concentration_wrt_folder(
         in_folder=in_folder,
         out_folder=out_folder,
         pixel_size_multiplier=pixel_size_multiplier,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
+        only_one_side=only_one_side,
         consider_classes=consider_classes,
         num_bins=num_bins,
         with_respect_to_class=with_respect_to_class,
