@@ -190,7 +190,6 @@ def split_mesh_into_connected_components(
         resort_mesh(verts, component_face, return_mapping=True)
         for component_face in component_faces
     ]
-
     component_verts = [resorted_mesh[0] for resorted_mesh in resorted_meshes]
     component_faces = [resorted_mesh[1] for resorted_mesh in resorted_meshes]
     vertex_mappings = [resorted_mesh[2] for resorted_mesh in resorted_meshes]

@@ -47,8 +47,12 @@ def geodesic_nearest_neighbors(
         point_coordinates_target=point_coordinates_target,
         method=method,
     )
-    nearest_neighbor_indices = np.argsort(distance_matrix, axis=1)[:, :num_neighbors]
-    nearest_neighbor_distances = np.sort(distance_matrix, axis=1)[:, :num_neighbors]
+    nearest_neighbor_indices = np.argsort(distance_matrix, axis=1)[
+        :, 1 : num_neighbors + 1
+    ]  # start from 1 to exclude the point itself
+    nearest_neighbor_distances = np.sort(distance_matrix, axis=1)[
+        :, 1 : num_neighbors + 1
+    ]
 
     # pad with -1 if less than num_neighbors
     nearest_neighbor_indices = np.pad(
@@ -63,6 +67,51 @@ def geodesic_nearest_neighbors(
     )
 
     return nearest_neighbor_indices, nearest_neighbor_distances
+
+
+def geodesic_nearest_neighbors_singlemb(
+    filename: str,
+    pixel_size_multiplier: float = None,
+    num_neighbors: int = 1,
+    start_classes: List[int] = [0],
+    target_classes: List[int] = [0],
+    method: str = "fast",
+):
+    """
+    Compute the geodesic nearest neighbors for a single mesh.
+
+    Parameters
+    ----------
+    filename : str
+        The filename of the mesh.
+    pixel_size_multiplier : float
+        The pixel size multiplier if the mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.
+    num_neighbors : int
+        The number of nearest neighbors to consider.
+    start_classes : List[int]
+        The list of classes to consider for start points.
+    target_classes : List[int]
+        The list of classes to consider for target points.
+    method : str
+        The method to use for computing geodesic distances. Can be either "exact" or "fast".
+    """
+    mesh_dict = get_mesh_from_file(
+        filename, pixel_size_multiplier=pixel_size_multiplier
+    )
+    mesh_dict = get_geodesic_distance_input(mesh_dict, start_classes, target_classes)
+
+    nn_data = geodesic_nearest_neighbors(
+        verts=mesh_dict["verts"],
+        faces=mesh_dict["faces"],
+        point_coordinates=mesh_dict["positions_start"],
+        point_coordinates_target=mesh_dict["positions_target"],
+        method=method,
+        num_neighbors=num_neighbors,
+    )
+    nearest_neighbor_indices = nn_data[0]
+    nearest_neighbor_distances = nn_data[1]
+
+    return mesh_dict, nearest_neighbor_indices, nearest_neighbor_distances
 
 
 def geodesic_nearest_neighbors_folder(
@@ -95,28 +144,22 @@ def geodesic_nearest_neighbors_folder(
         The method to use for computing geodesic distances. Can be either "exact" or "fast".
     """
     filenames = get_mesh_filenames(in_folder)
-    mesh_dicts = [
-        get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier)
+
+    nn_outputs = [
+        geodesic_nearest_neighbors_singlemb(
+            filename,
+            pixel_size_multiplier=pixel_size_multiplier,
+            num_neighbors=num_neighbors,
+            start_classes=start_classes,
+            target_classes=target_classes,
+            method=method,
+        )
         for filename in filenames
     ]
-    mesh_dicts = [
-        get_geodesic_distance_input(mesh_dict, start_classes, target_classes)
-        for mesh_dict in mesh_dicts
-    ]
 
-    nn_data = [
-        geodesic_nearest_neighbors(
-            verts=mesh_dicts[i]["verts"],
-            faces=mesh_dicts[i]["faces"],
-            point_coordinates=mesh_dicts[i]["positions_start"],
-            point_coordinates_target=mesh_dicts[i]["positions_target"],
-            method=method,
-            num_neighbors=num_neighbors,
-        )
-        for i in range(len(mesh_dicts))
-    ]
-    nearest_neighbor_indices = [data[0] for data in nn_data]
-    nearest_neighbor_distances = [data[1] for data in nn_data]
+    mesh_dicts = [data[0] for data in nn_outputs]
+    nearest_neighbor_indices = [data[1] for data in nn_outputs]
+    nearest_neighbor_distances = [data[2] for data in nn_outputs]
 
     # create a separate star file for each mesh
     for i in range(len(nearest_neighbor_indices)):
