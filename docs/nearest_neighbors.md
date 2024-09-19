@@ -24,6 +24,17 @@ Other optional arguments:
 - `--start-classes`: List of classes to consider for start points. Default: `0`
 - `--target-classes`: List of classes to consider for target points. Default: `0`
 - `--method`: Method to use for computing geodesic distances. Can be either 'exact' or 'fast'. Default: `fast`
+- `--c2-symmetry`: If True, the C2 symmetry of the protein will be considered when computing the angles. Default: `False`
+- `--project-to-plane`: If True, the vectors will be projected to the mean plane of the two points to isolate in-plane angles. Default: `False`
+
+
+### Nearest neighbor orientations
+If your `in-folder` contains `.star` files with `rlnAngleRot`, `rlnAngleTilt`, and `rlnAnglePsi` columns, the orientations of the nearest neighbors can be computed as well.
+It will store the angles in the per-membrane output star files for each nearest neighbor.
+
+Corresponding command line arguments:
+- `--c2-symmetry`: If True, the C2 symmetry of the protein will be considered when computing the angles. Default: `False`
+- `--project-to-plane`: If True, the vectors will be projected to the mean plane of the two points to isolate in-plane angles. Default: `False`
 
 
 ## Nearest Neighbors Distance with respect to another point class

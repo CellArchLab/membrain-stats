@@ -140,11 +140,11 @@ def protein_concentration_wrt(
         help="Method to use for computing the distance matrix. Can be either 'geodesic' or 'euclidean'.",
     ),
 ):
-    """Compute the protein concentration in all membrane meshes in a folder.
+    """Compute protein concentrations with respect to distance to a specific point class.
 
     Example
     -------
-    membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
+    membrain_stats protein_concentration_wrt --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --consider-classes 0 --num-bins 25 --with-respect-to-class 1
     """
 
     from membrain_stats.protein_concentration import (
@@ -207,11 +207,11 @@ def geodesic_NN(
         help="If True, the vectors will be projected to the mean plane of the two points to isolate in-plane angles.",
     ),
 ):
-    """Compute the protein concentration in all membrane meshes in a folder.
+    """Compute geometric distances between nearest neighbors in all membrane meshes in a folder.
 
     Example
     -------
-    membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
+    membrain_stats geodesic_NN --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --num-neighbors 1
     """
 
     from membrain_stats.geodesic_distances import (
@@ -277,11 +277,11 @@ def geodesic_NN_wrt(
         help="Method to use for computing the distance matrix. Can be either 'geodesic' or 'euclidean'.",
     ),
 ):
-    """Compute the protein concentration in all membrane meshes in a folder.
+    """Compute geodesic distances between nearest neighbors with respect to a specific class.
 
     Example
     -------
-    membrain_stats protein_concentration --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --mesh-pixel-size 14.08 --only-one-side --exclude-edges --edge-exclusion-width 50
+    membrain_stats geodesic_NN_wrt --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --num-neighbors 1 --num-bins 25 --with-respect-to-class 1
     """
 
     from membrain_stats.geodesic_distances import (
@@ -344,6 +344,12 @@ def geodesic_ripley(
         50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
 ):
+    """Compute Ripley statistics for all membrane meshes in a folder.
+
+    Example
+    -------
+    membrain_stats geodesic_ripley --in-folder <path-to-your-folder> --out-folder <path-to-store-meshes> --ripley-type L --num-bins 50
+    """
     from membrain_stats.geodesic_distances import (
         geodesic_ripleys_folder,
     )
