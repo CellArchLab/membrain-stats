@@ -83,8 +83,8 @@ def geodesic_nearest_neighbors(
             mesh=trimesh.Trimesh(vertices=verts, faces=faces),
             project_to_plane=project_to_plane,
         )
-        nearest_neighbor_angles = np.array(
-            angles[np.arange(len(point_coordinates)), nearest_neighbor_indices]
+        nearest_neighbor_angles = np.take_along_axis(
+            angles, nearest_neighbor_indices, axis=1
         )
     else:
         nearest_neighbor_angles = None
