@@ -198,6 +198,14 @@ def geodesic_NN(
         "fast",
         help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'.",
     ),
+    c2_symmetry: bool = Option(  # noqa: B008
+        False,
+        help="If True, the C2 symmetry of the protein will be considered when computing the angles.",
+    ),
+    project_to_plane: bool = Option(  # noqa: B008
+        False,
+        help="If True, the vectors will be projected to the mean plane of the two points to isolate in-plane angles.",
+    ),
 ):
     """Compute the protein concentration in all membrane meshes in a folder.
 
@@ -218,6 +226,8 @@ def geodesic_NN(
         start_classes=start_classes,
         target_classes=target_classes,
         method=method,
+        c2_symmetry=c2_symmetry,
+        project_to_plane=project_to_plane,
     )
 
 
