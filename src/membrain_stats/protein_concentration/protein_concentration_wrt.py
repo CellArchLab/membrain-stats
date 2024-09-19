@@ -21,6 +21,7 @@ def protein_concentration_wrt_folder(
     exclude_edges: bool = False,
     edge_exclusion_width: float = 50.0,
     pixel_size_multiplier: float = None,
+    only_one_side: bool = False,
     consider_classes: List[int] = "all",
     with_respect_to_class: int = 0,
     num_bins: int = 25,
@@ -33,14 +34,6 @@ def protein_concentration_wrt_folder(
         get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier)
         for filename in filenames
     ]
-    meshes = [
-        trimesh.Trimesh(
-            vertices=mesh_dict["verts"],
-            faces=mesh_dict["faces"],
-        )
-        for mesh_dict in mesh_dicts
-    ]
-
     if exclude_edges:
         mesh_dicts = [
             exclude_edges_from_mesh(
@@ -53,6 +46,14 @@ def protein_concentration_wrt_folder(
             for filename, mesh_dict in zip(filenames, mesh_dicts)
         ]
 
+    meshes = [
+        trimesh.Trimesh(
+            vertices=mesh_dict["verts"],
+            faces=mesh_dict["faces"],
+        )
+        for mesh_dict in mesh_dicts
+    ]
+
     protein_nearest_wrt_distances, mesh_barycentric_areas, mesh_distances = (
         get_wrt_inputs(
             mesh_dicts=mesh_dicts,
@@ -63,6 +64,9 @@ def protein_concentration_wrt_folder(
             distance_matrix_method=distance_matrix_method,
         )
     )
+    mesh_barycentric_areas /= 100  # convert to nm^2
+    if only_one_side:
+        mesh_barycentric_areas /= 2
 
     bins = np.linspace(0, np.max(protein_nearest_wrt_distances), num_bins)
     hist = np.histogram(protein_nearest_wrt_distances, bins=bins)[0]
@@ -72,14 +76,13 @@ def protein_concentration_wrt_folder(
         bin_upper = bins[num_bin + 1]
         area_mask = (mesh_distances >= bin_lower) & (mesh_distances < bin_upper)
         y_data.append(protein_numbers / np.sum(mesh_barycentric_areas[area_mask]))
-
     from matplotlib import pyplot as plt
 
     plt.figure()
     plt.plot(bins[:-1], y_data)
     plt.xlabel("Distance to nearest protein")
     plt.ylabel("Area covered")
-    plt.savefig("./protein_concentration.png")
+    plt.savefig("./protein_concentration_wrt.png")
 
     out_data = {
         "bin_lower": bins[:-1],
@@ -87,4 +90,8 @@ def protein_concentration_wrt_folder(
         "concentration": y_data,
     }
     out_data = pd.DataFrame(out_data)
-    starfile.write(out_data, os.path.join(out_folder, "protein_concentration_wrt.star"))
+    starfile.write(
+        out_data,
+        os.path.join(out_folder, "protein_concentration_wrt.star"),
+        float_format="%.12f",
+    )

@@ -55,10 +55,11 @@ def compute_distance_matrices(
             compute_geodesic_distance_matrix(
                 verts=mesh.vertices,
                 faces=mesh.faces,
-                point_coordinates=consider_positions[i],
-                point_coordinates_target=wrt_positions[i],
+                point_coordinates_target=consider_positions[i],
+                point_coordinates=wrt_positions[i],
                 method=geod_distance_method,
                 return_mesh_distances=True,
+                infinite_distance_for_pointless_areas=True,
             )
             for i, mesh in enumerate(meshes)
         ]
@@ -66,8 +67,8 @@ def compute_distance_matrices(
         distance_matrix_outputs = [
             compute_euclidean_distance_matrix(
                 verts=mesh.vertices,
-                point_coordinates=consider_positions[i],
-                point_coordinates_target=wrt_positions[i],
+                point_coordinates_target=consider_positions[i],
+                point_coordinates=wrt_positions[i],
                 return_mesh_distances=True,
             )
             for i, mesh in enumerate(meshes)
@@ -118,17 +119,16 @@ def get_wrt_inputs(
     )
     # Compute the nearest distances for each protein
     protein_nearest_wrt_distances = [
-        np.min(distance_matrix, axis=1) for distance_matrix in distance_matrices
+        np.min(distance_matrix, axis=0) for distance_matrix in distance_matrices
     ]
     protein_nearest_wrt_distances = np.concatenate(protein_nearest_wrt_distances)
     protein_nearest_wrt_distances = np.sort(protein_nearest_wrt_distances)
 
     # Compute the barycentric areas
+
+    mesh_distances = [np.min(mesh_dist, axis=0) for mesh_dist in mesh_distances]
+
     mesh_barycentric_areas = compute_barycentric_areas(meshes)
-    mesh_barycentric_areas = [
-        np.repeat(barycentric_area, len(mesh_dist))
-        for barycentric_area, mesh_dist in zip(mesh_barycentric_areas, mesh_distances)
-    ]
     mesh_barycentric_areas = np.concatenate(mesh_barycentric_areas)
 
     # Flatten and concatenate mesh distances

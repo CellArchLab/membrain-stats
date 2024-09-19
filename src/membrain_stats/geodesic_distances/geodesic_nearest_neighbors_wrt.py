@@ -11,63 +11,67 @@ from membrain_stats.utils.io_utils import (
     get_geodesic_distance_input,
 )
 from membrain_stats.utils.wrt_utils import get_wrt_inputs
-from membrain_stats.utils.geodesic_distance_utils import (
-    compute_geodesic_distance_matrix,
+
+# from membrain_stats.utils.geodesic_distance_utils import (
+#     compute_geodesic_distance_matrix,
+# )
+from membrain_stats.geodesic_distances.geodesic_nearest_neighbors import (
+    geodesic_nearest_neighbors,
 )
 from membrain_stats.membrane_edges.edge_from_curvature import exclude_edges_from_mesh
 
 
-def geodesic_nearest_neighbors(
-    verts: np.ndarray,
-    faces: np.ndarray,
-    point_coordinates: np.ndarray,
-    point_coordinates_target: np.ndarray,
-    method: str = "fast",
-    num_neighbors: int = 1,
-):
-    """
-    Compute the geodesic nearest neighbors for a single mesh.
+# def geodesic_nearest_neighbors(
+#     verts: np.ndarray,
+#     faces: np.ndarray,
+#     point_coordinates: np.ndarray,
+#     point_coordinates_target: np.ndarray,
+#     method: str = "fast",
+#     num_neighbors: int = 1,
+# ):
+#     """
+#     Compute the geodesic nearest neighbors for a single mesh.
 
-    Parameters
-    ----------
-    verts : np.ndarray
-        The vertices of the mesh.
-    faces : np.ndarray
-        The faces of the mesh.
-    point_coordinates : np.ndarray
-        The coordinates of the start points.
-    point_coordinates_target : np.ndarray
-        The coordinates of the target points.
-    method : str
-        The method to use for computing geodesic distances. Can be either "exact" or "fast".
-    num_neighbors : int
-        The number of nearest neighbors to consider.
-    """
-    distance_matrix = compute_geodesic_distance_matrix(
-        verts=verts,
-        faces=faces,
-        point_coordinates=point_coordinates,
-        point_coordinates_target=point_coordinates_target,
-        method=method,
-    )
-    # replace -1 with inf
-    distance_matrix[distance_matrix == -1] = np.inf
-    nearest_neighbor_indices = np.argsort(distance_matrix, axis=1)[:, :num_neighbors]
-    nearest_neighbor_distances = np.sort(distance_matrix, axis=1)[:, :num_neighbors]
+#     Parameters
+#     ----------
+#     verts : np.ndarray
+#         The vertices of the mesh.
+#     faces : np.ndarray
+#         The faces of the mesh.
+#     point_coordinates : np.ndarray
+#         The coordinates of the start points.
+#     point_coordinates_target : np.ndarray
+#         The coordinates of the target points.
+#     method : str
+#         The method to use for computing geodesic distances. Can be either "exact" or "fast".
+#     num_neighbors : int
+#         The number of nearest neighbors to consider.
+#     """
+#     distance_matrix = compute_geodesic_distance_matrix(
+#         verts=verts,
+#         faces=faces,
+#         point_coordinates=point_coordinates,
+#         point_coordinates_target=point_coordinates_target,
+#         method=method,
+#     )
+#     # replace -1 with inf
+#     distance_matrix[distance_matrix == -1] = np.inf
+#     nearest_neighbor_indices = np.argsort(distance_matrix, axis=1)[:, :num_neighbors]
+#     nearest_neighbor_distances = np.sort(distance_matrix, axis=1)[:, :num_neighbors]
 
-    # pad with -1 if less than num_neighbors
-    nearest_neighbor_indices = np.pad(
-        nearest_neighbor_indices,
-        ((0, 0), (0, num_neighbors - nearest_neighbor_indices.shape[1])),
-        constant_values=-1,
-    )
-    nearest_neighbor_distances = np.pad(
-        nearest_neighbor_distances,
-        ((0, 0), (0, num_neighbors - nearest_neighbor_distances.shape[1])),
-        constant_values=-1,
-    )
+#     # pad with -1 if less than num_neighbors
+#     nearest_neighbor_indices = np.pad(
+#         nearest_neighbor_indices,
+#         ((0, 0), (0, num_neighbors - nearest_neighbor_indices.shape[1])),
+#         constant_values=-1,
+#     )
+#     nearest_neighbor_distances = np.pad(
+#         nearest_neighbor_distances,
+#         ((0, 0), (0, num_neighbors - nearest_neighbor_distances.shape[1])),
+#         constant_values=-1,
+#     )
 
-    return nearest_neighbor_indices, nearest_neighbor_distances
+#     return nearest_neighbor_indices, nearest_neighbor_distances
 
 
 def geodesic_nearest_neighbors_wrt_folder(
@@ -86,6 +90,7 @@ def geodesic_nearest_neighbors_wrt_folder(
 ):
     """ """
     filenames = get_mesh_filenames(in_folder)
+
     mesh_dicts = [
         get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier)
         for filename in filenames
@@ -155,3 +160,13 @@ def geodesic_nearest_neighbors_wrt_folder(
     out_data = pd.DataFrame(out_data)
     out_file = os.path.join(out_folder, "nearest_neighbor_distances_wrt_bins.star")
     starfile.write(out_data, out_file)
+
+    # store image
+    from matplotlib import pyplot as plt
+
+    plt.figure()
+    plt.plot(bins[:-1], y_data)
+    plt.xlabel("Distance to nearest protein")
+    plt.ylabel("Mean distance to nearest neighbor")
+    plt.savefig("nearest_neighbor_distances_wrt_bins.png")
+    plt.close()
