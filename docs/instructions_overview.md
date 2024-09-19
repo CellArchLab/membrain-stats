@@ -8,21 +8,30 @@ As a first step, you need to prepare the data. The most important ingredients fo
 ## Functionalities
 All functionalities can be accessed via the command line interface (CLI). To get an overview of all functionalities, run:
 ```bash
-membrain-stats
+membrain_stats
 ```
 
 ### Protein Concentration
 The command `protein_concentration` computes the number of proteins per membrane area. It can be accessed via the command line interface (CLI) by running:
 ```bash
-membrain-stats protein_concentration --in-folder <path/to/folder>
+membrain_stats protein_concentration --in-folder <path/to/folder>
 ```
 More information can be found [here](protein_concentrations.md).
 
 ### (geodesic) Nearest Neighbors
-tbd.
-
+The command `geodesic_NN` computes the geometric distances between nearest neighbors in the membrane. It can be accessed via the command line interface (CLI) by running:
+```bash
+membrain_stats geodesic_NN --in-folder <path/to/folder> --start-classes <list_of_classes> --target-classes <list_of_classes>
+```
+More information can be found [here](nearest_neighbors.md).
 ### (geodesic) Ripley's Statistics
-tbd.
+The command `geodesic_ripley` computes Ripley's statistics for all membrane meshes in a folder. It can be accessed via the command line interface (CLI) by running:
+```bash
+membrain_stats geodesic_ripley --in-folder <path/to/folder> --start-classes <list_of_classes> --target-classes <list_of_classes>
+```
+More information can be found [here](ripley_statistics.md).
 
 ### Edge exclusion
-tbd.
+The edge exclusion functionality can be used to exclude the edges of the membrane from the analysis. It can be accessed as an optional argument to many of the functionalities. More information can be found [here](edge_exclusion.md).
+
+
