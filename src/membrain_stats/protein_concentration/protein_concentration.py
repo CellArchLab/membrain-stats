@@ -18,6 +18,7 @@ def protein_concentration_singlemb(
     edge_file: str = None,
     edge_exclusion_width: float = 50.0,
     only_one_side: bool = False,
+    edge_percentile: float = 95,
 ):
     mesh_dict = get_mesh_from_file(
         filename, pixel_size_multiplier=pixel_size_multiplier
@@ -25,9 +26,12 @@ def protein_concentration_singlemb(
     mesh = trimesh.Trimesh(vertices=mesh_dict["verts"], faces=mesh_dict["faces"])
 
     if exclude_edges:
-        mesh, _ = get_edge_mask(
-            mesh=mesh, edge_exclusion_width=edge_exclusion_width, temp_file=edge_file
-        )
+        mesh = get_edge_mask(
+            mesh=mesh,
+            edge_exclusion_width=edge_exclusion_width,
+            temp_file=edge_file,
+            percentile=edge_percentile,
+        )[0]
 
     area = mesh.area
     area = area * (0.5 if only_one_side else 1.0)
@@ -99,6 +103,8 @@ def protein_concentration_folder(
     exclude_edges: bool = False,
     edge_exclusion_width: float = 50.0,
     pixel_size_multiplier: float = None,
+    plot: bool = False,
+    edge_percentile: float = 95,
 ):
 
     filenames = get_mesh_filenames(in_folder)
@@ -112,6 +118,7 @@ def protein_concentration_folder(
             edge_file=edge_file,
             edge_exclusion_width=edge_exclusion_width,
             only_one_side=only_one_side,
+            # edge_percentile=edge_percentile,
         )
         for filename, edge_file in zip(filenames, out_files_edges)
     ]
@@ -128,3 +135,11 @@ def protein_concentration_folder(
     out_file = os.path.join(out_folder, "protein_concentration.star")
     os.makedirs(out_folder, exist_ok=True)
     starfile.write(out_data, out_file)
+
+    # if plot:
+    #     import matplotlib.pyplot as plt
+
+    #     # make histogram
+    #     plt.figure()
+    #     plt.hist(protein_concentrations, bins=10)
+    #     plt.savefig(os.path.join(out_folder, "protein_concentration_histogram.png"))
