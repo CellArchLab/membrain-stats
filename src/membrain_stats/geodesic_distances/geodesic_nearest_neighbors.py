@@ -46,6 +46,17 @@ def geodesic_nearest_neighbors(
         The method to use for computing geodesic distances. Can be either "exact" or "fast".
     num_neighbors : int
         The number of nearest neighbors to consider.
+    angles_start : np.ndarray
+        The angles of the start points.
+    angles_target : np.ndarray
+        The angles of the target points.
+    compute_angles : bool
+        Whether to compute the angles between the start and target points.
+    c2_symmetry : bool
+        Whether the protein has C2 symmetry.
+    project_to_plane : bool
+        Whether to project the mesh to a plane.
+
     """
     distance_matrix = compute_geodesic_distance_matrix(
         verts=verts,
@@ -160,6 +171,7 @@ def geodesic_nearest_neighbors_folder(
     method: str = "fast",
     c2_symmetry: bool = False,
     project_to_plane: bool = False,
+    plot: bool = False,
 ):
     """
     Compute the geodesic nearest neighbors for all meshes in a folder.
@@ -211,9 +223,9 @@ def geodesic_nearest_neighbors_folder(
             "start_positionZ": np.array(mesh_dicts[i]["positions_start"][:, 2]),
         }
         if mesh_dicts[i]["hasAngles"]:
-            out_data["start_angleRot"] = np.array(mesh_dicts[i]["angles"][:, 0])
-            out_data["start_angleTilt"] = np.array(mesh_dicts[i]["angles"][:, 1])
-            out_data["start_anglePsi"] = np.array(mesh_dicts[i]["angles"][:, 2])
+            out_data["start_angleRot"] = np.array(mesh_dicts[i]["angles_start"][:, 0])
+            out_data["start_angleTilt"] = np.array(mesh_dicts[i]["angles_start"][:, 1])
+            out_data["start_anglePsi"] = np.array(mesh_dicts[i]["angles_start"][:, 2])
         for j in range(num_neighbors):
             out_data[f"nn{j}_positionX"] = np.array(
                 mesh_dicts[i]["positions_target"][nearest_neighbor_indices[i][:, j], 0]
@@ -243,3 +255,15 @@ def geodesic_nearest_neighbors_folder(
         out_file = os.path.join(out_folder, f"{out_token}_nearest_neighbors.star")
         os.makedirs(out_folder, exist_ok=True)
         starfile.write(out_data, out_file)
+
+    if plot:
+        # plot the nearest neighbors as histograms
+        # concatenate all distances
+        all_nearest_neighbor_distances = np.concatenate(nearest_neighbor_distances)
+        from matplotlib import pyplot as plt
+
+        plt.figure()
+        plt.hist(all_nearest_neighbor_distances, bins=30)
+        plt.xlabel("Nearest neighbor distance")
+        plt.ylabel("Frequency")
+        plt.savefig(os.path.join(out_folder, "nearest_neighbor_distances.png"))
