@@ -33,6 +33,8 @@ def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
         faces = mesh_data["faces"]
         positions = mesh_data["cluster_centers"] * pixel_size_multiplier
         classes = np.zeros(len(positions), dtype=int)
+        angles = np.zeros((len(positions), 3))
+        hasAngles = False
     else:
         mesh = trimesh.load_mesh(filename)
         verts = mesh.vertices * pixel_size_multiplier
