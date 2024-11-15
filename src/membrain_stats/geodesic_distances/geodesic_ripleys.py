@@ -26,6 +26,8 @@ def geodesic_ripleys_folder(
     method: str = "fast",
     exclude_edges: bool = False,
     edge_exclusion_width: float = 50.0,
+    plot: bool = False,
+    edge_percentile: float = 95,
 ):
     # get filenames from folder
     filenames = get_mesh_filenames(in_folder)
@@ -44,6 +46,8 @@ def geodesic_ripleys_folder(
                 filename=filename,
                 mesh_dict=mesh_dict,
                 edge_exclusion_width=edge_exclusion_width,
+                percentile=edge_percentile,
+                force_recompute=False,
             )
             for (filename, mesh_dict) in zip(filenames, mesh_dicts)
         ]
@@ -74,3 +78,13 @@ def geodesic_ripleys_folder(
     out_file = os.path.join(out_folder, f"ripleys{ripley_type}.star")
     os.makedirs(out_folder, exist_ok=True)
     starfile.write(out_data, out_file)
+
+    if plot:
+        from matplotlib import pyplot as plt
+
+        # plot Ripley's statistics
+        plt.plot(ripley_stats[0], ripley_stats[1])
+        plt.xlabel("Distance (nm)")
+        plt.ylabel(f"Ripley's {ripley_type}")
+        plt.title(f"Ripley's {ripley_type}")
+        plt.savefig(os.path.join(out_folder, f"ripleys{ripley_type}.png"))
