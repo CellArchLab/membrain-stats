@@ -111,12 +111,14 @@ def accumulate_barycentric_areas(
         [np.sum(x_barycentric_area) for x_barycentric_area in x_barycentric_areas]
     )
 
+    total_conc = np.sum(protein_per_distance) / np.sum(x_barycentric_areas)
+
     # accumulate if not computing O statistic
     if ripley_type != "O":
         protein_per_distance = np.cumsum(protein_per_distance)
         x_barycentric_areas = np.cumsum(x_barycentric_areas)
 
-    return protein_per_distance, x_barycentric_areas
+    return protein_per_distance, x_barycentric_areas, total_conc
 
 
 def define_xy_values(
@@ -167,10 +169,14 @@ def aggregate_ripleys_stats(
         barycentric_areas=barycentric_areas, mesh_distances=mesh_distances
     )
 
-    # compute global concentration of reachable points
-    total_concentration = np.sum(avg_reachable_points) / np.sum(
-        all_barycentric_areas[all_mesh_distances < np.inf]
-    )
+    # print(all_barycentric_areas.shape, len(avg_reachable_points), "<--")
+    # print(all_mesh_distances.shape, len(avg_reachable_points), "<--")
+    # print(avg_reachable_points, avg_starting_points, "<--")
+
+    # # compute global concentration of reachable points
+    # total_concentration = np.sum(avg_reachable_points) / np.sum(
+    #     all_barycentric_areas[all_mesh_distances < np.inf]
+    # )
 
     # sort in ascending order
     all_mesh_distances, all_barycentric_areas = (
@@ -187,12 +193,14 @@ def aggregate_ripleys_stats(
     protein_per_distance = distance_histogram / avg_starting_points
 
     # accumulate into computed bins
-    protein_per_distance, x_barycentric_areas = accumulate_barycentric_areas(
-        all_barycentric_areas=all_barycentric_areas,
-        all_mesh_distances=all_mesh_distances,
-        all_distances=all_distances,
-        protein_per_distance=protein_per_distance,
-        ripley_type=ripley_type,
+    protein_per_distance, x_barycentric_areas, total_concentration = (
+        accumulate_barycentric_areas(
+            all_barycentric_areas=all_barycentric_areas,
+            all_mesh_distances=all_mesh_distances,
+            all_distances=all_distances,
+            protein_per_distance=protein_per_distance,
+            ripley_type=ripley_type,
+        )
     )
 
     # define final outputs
