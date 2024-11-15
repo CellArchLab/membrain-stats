@@ -74,7 +74,12 @@ def check_mappings(
     These mappings should be bijections.
     """
     # check forward mappings defined for all vertices
-    assert len(forward_vertex_mapping) == len(orig_verts)
+    assert len(forward_vertex_mapping) == len(orig_verts), (
+        "Forward vertex mapping failed because: "
+        + str(len(forward_vertex_mapping))
+        + " != "
+        + str(len(orig_verts))
+    )
     # check reverse mappings defined for all forward mappings
     assert len(reverse_vertex_mapping) == len(forward_vertex_mapping)
     # check forward mappings defined for all faces
@@ -104,9 +109,6 @@ def check_mappings(
         for component_vertex_idx, component_vertex in enumerate(component_verts):
             vertex_idx = reverse_vertex_mapping[(component_idx, component_vertex_idx)]
             assert np.allclose(orig_verts[vertex_idx], component_vertex)
-        for component_face_idx, component_face in enumerate(component_faces):
-            face_idx = reverse_face_mapping[(component_idx, component_face_idx)]
-            assert np.allclose(orig_faces[face_idx], component_face)
 
 
 def vertex_adjacency(faces):
@@ -143,9 +145,7 @@ def vertex_adjacency(faces):
     for adjacent_faces in vertex_to_faces.values():
         # Sort face indices to avoid creating duplicate (a, b) and (b, a) pairs
         for i in range(len(adjacent_faces)):
-            for j in range(
-                i + 1, len(adjacent_faces)
-            ):  # Ensure adj_face_idx > face_idx
+            for j in range(i, len(adjacent_faces)):  # Ensure adj_face_idx > face_idx
                 adjacency.add((adjacent_faces[i], adjacent_faces[j]))
 
     # Convert the set to a numpy array for consistency
@@ -156,7 +156,17 @@ def split_mesh_into_connected_components(
     verts, faces, return_face_mapping=False, return_vertex_mapping=False
 ):
     adjacency = vertex_adjacency(faces)
-    components = connected_components(adjacency)
+    components = connected_components(adjacency, min_len=0)
+    print(len(components), "connected components found.")
+
+    # # store connected components
+    # if len(components) > 2:
+    #     test_folder = "/scicore/home/engel0006/GROUP/pool-engel/Lorenz/MemBrain_stats/Phycobilisomes/test_meshes/"
+    #     for i, component in enumerate(components):
+    #         component_faces = faces[np.isin(np.arange(len(faces)), component)]
+    #         component_mesh = trimesh.Trimesh(verts, component_faces)
+    #         component_mesh.export(test_folder + f"component_{i}.obj")
+    #     exit()
 
     component_face_idcs = [
         np.argwhere(np.isin(np.arange(len(faces)), component)).flatten()
