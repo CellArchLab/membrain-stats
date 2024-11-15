@@ -73,6 +73,13 @@ def protein_concentration(
     edge_exclusion_width: float = Option(  # noqa: B008
         50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
+    edge_percentile: float = Option(  # noqa: B008
+        95, help="Percentile to use for edge exclusion."
+    ),
+    plot: bool = Option(  # noqa: B008
+        False,
+        help="If True, the protein concentration will be plotted for each mesh.",
+    ),
 ):
     """Compute the protein concentration in all membrane meshes in a folder.
 
@@ -92,6 +99,8 @@ def protein_concentration(
         only_one_side=only_one_side,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
+        edge_percentile=edge_percentile,
+        plot=plot,
     )
 
 
@@ -206,6 +215,10 @@ def geodesic_NN(
         False,
         help="If True, the vectors will be projected to the mean plane of the two points to isolate in-plane angles.",
     ),
+    plot: bool = Option(  # noqa: B008
+        False,
+        help="If True, the geodesic distances will be plotted for each mesh.",
+    ),
 ):
     """Compute geometric distances between nearest neighbors in all membrane meshes in a folder.
 
@@ -228,6 +241,7 @@ def geodesic_NN(
         method=method,
         c2_symmetry=c2_symmetry,
         project_to_plane=project_to_plane,
+        plot=plot,
     )
 
 
@@ -343,6 +357,13 @@ def geodesic_ripley(
     edge_exclusion_width: float = Option(  # noqa: B008
         50.0, help="Width of the edge exclusion zone in Anstrom."
     ),
+    edge_percentile: float = Option(  # noqa: B008
+        95, help="Percentile to use for edge exclusion."
+    ),
+    plot: bool = Option(  # noqa: B008
+        False,
+        help="If True, the Ripley statistics will be plotted for each mesh.",
+    ),
 ):
     """Compute Ripley statistics for all membrane meshes in a folder.
 
@@ -365,4 +386,6 @@ def geodesic_ripley(
         method=method,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
+        edge_percentile=edge_percentile,
+        plot=plot,
     )
