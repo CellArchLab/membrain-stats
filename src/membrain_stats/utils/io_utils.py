@@ -23,15 +23,24 @@ def get_mesh_filenames(in_folder: str):
     return files
 
 
-def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
+def get_mesh_from_file(
+    filename: str,
+    pixel_size_multiplier: float = None,
+    pixel_size_multiplier_positions: float = None,
+):
     pixel_size_multiplier = (
         1.0 if pixel_size_multiplier is None else pixel_size_multiplier
+    )
+    pixel_size_multiplier_positions = (
+        1.0
+        if pixel_size_multiplier_positions is None
+        else pixel_size_multiplier_positions
     )
     if filename.endswith(".h5"):
         mesh_data = load_mesh_from_hdf5(filename)
         verts = mesh_data["points"] * pixel_size_multiplier
         faces = mesh_data["faces"]
-        positions = mesh_data["cluster_centers"] * pixel_size_multiplier
+        positions = mesh_data["cluster_centers"] * pixel_size_multiplier_positions
         classes = np.zeros(len(positions), dtype=int)
         angles = np.zeros((len(positions), 3))
         hasAngles = False
@@ -53,7 +62,7 @@ def get_mesh_from_file(filename: str, pixel_size_multiplier: float = None):
             hasAngles = False
         positions = (
             positions[["rlnCoordinateX", "rlnCoordinateY", "rlnCoordinateZ"]].values
-            # * pixel_size_multiplier
+            * pixel_size_multiplier_positions
         )
     out_dict = {
         "verts": verts,
