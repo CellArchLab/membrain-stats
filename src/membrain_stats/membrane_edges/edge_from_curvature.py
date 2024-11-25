@@ -1,9 +1,12 @@
 import os
 import numpy as np
 import trimesh
+import pyvista as pv
 from scipy.spatial import cKDTree
 from membrain_stats.utils.mesh_utils import resort_mesh, find_closest_vertices
 from membrain_stats.utils.io_utils import get_tmp_edge_files
+
+from membrain_pick.dataloading.data_utils import store_array_in_csv
 
 
 def get_edge_mask(
@@ -24,10 +27,11 @@ def get_edge_mask(
     if curvature is None:
         # Get the curvature of the mesh
         print("Computing curvature...")
-        curvature = trimesh.curvature.discrete_mean_curvature_measure(
-            mesh, points=mesh.vertices, radius=10.0
-        )
-        print("Computed curvature.")
+
+        pv_mesh = pv.wrap(mesh)
+        curvature = pv_mesh.curvature("Mean")
+        pv_mesh["Curvature"] = curvature
+
         if temp_file is not None:
             np.save(temp_file, curvature)
 
