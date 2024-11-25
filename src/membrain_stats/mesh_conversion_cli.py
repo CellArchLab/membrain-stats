@@ -62,6 +62,10 @@ def protein_concentration(
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
     ),
+    pixel_size_multiplier_positions: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, loaded positions are multiplied by this value.",
+    ),
     only_one_side: bool = Option(  # noqa: B008
         False,
         help="If True, only one side of the membrane will be considered for area calculation.",
@@ -96,6 +100,7 @@ def protein_concentration(
         in_folder=in_folder,
         out_folder=out_folder,
         pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
         only_one_side=only_one_side,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
