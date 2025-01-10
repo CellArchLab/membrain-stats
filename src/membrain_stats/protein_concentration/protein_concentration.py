@@ -10,6 +10,9 @@ from membrain_stats.utils.io_utils import (
     get_tmp_edge_files,
 )
 from membrain_stats.membrane_edges.edge_from_curvature import get_edge_mask
+from membrain_stats.membrane_edges.exclude_edge_positions import (
+    mask_geodesic_edge_positions,
+)
 
 
 def protein_concentration_singlemb(
@@ -28,46 +31,21 @@ def protein_concentration_singlemb(
         pixel_size_multiplier=pixel_size_multiplier,
         pixel_size_multiplier_positions=pixel_size_multiplier_positions,
     )
-    mesh = trimesh.Trimesh(vertices=mesh_dict["verts"], faces=mesh_dict["faces"])
 
     if exclude_edges:
-        mesh_orig = mesh
-        mesh = get_edge_mask(
-            mesh=mesh,
-            edge_exclusion_width=edge_exclusion_width,
-            temp_file=edge_file,
-            percentile=edge_percentile,
-            return_vertex_mask=True,
+        positions, mesh = mask_geodesic_edge_positions(
+            positions=mesh_dict["positions"],
+            mesh_dict=mesh_dict,
+            edge_exclusion_params={
+                "edge_exclusion_width": edge_exclusion_width,
+                "out_file": edge_file,
+                "edge_percentile": edge_percentile,
+                "store_sanity_meshes": store_sanity_meshes,
+            },
         )
-
-        if store_sanity_meshes:
-            # store in file:
-            out_mesh_orig = (
-                "./sanity_meshes/"
-                + os.path.basename(filename).split(".")[0]
-                + "_orig.obj"
-            )
-            out_mesh_cropped = "./sanity_meshes/" + os.path.basename(filename)
-            mesh_orig.export(out_mesh_orig)
-            mesh[0].export(out_mesh_cropped)
-
-        mesh, vertex_mask = mesh
-        positions = mesh_dict["positions"]
-
-        excluded_vertices = mesh_orig.vertices[~vertex_mask]
-        included_vertices = mesh_orig.vertices[vertex_mask]
-
-        # compute nearest neighbor vertex for each position
-        tree_included = scipy.spatial.cKDTree(included_vertices)
-        tree_excluded = scipy.spatial.cKDTree(excluded_vertices)
-
-        nn_distances_inc = tree_included.query(positions, k=1)[0]
-        nn_distances_exc = tree_excluded.query(positions, k=1)[0]
-
-        # exclude vertices that are closer to the excluded vertices than to the included vertices
-        mask = nn_distances_inc < nn_distances_exc
-        positions = positions[mask]
         mesh_dict["positions"] = positions
+    else:
+        mesh = trimesh.Trimesh(vertices=mesh_dict["verts"], faces=mesh_dict["faces"])
 
     area = mesh.area
     area = area * (0.5 if only_one_side else 1.0)

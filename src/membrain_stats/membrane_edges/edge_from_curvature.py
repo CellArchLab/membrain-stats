@@ -6,8 +6,6 @@ from scipy.spatial import cKDTree
 from membrain_stats.utils.mesh_utils import resort_mesh, find_closest_vertices
 from membrain_stats.utils.io_utils import get_tmp_edge_files
 
-from membrain_pick.dataloading.data_utils import store_array_in_csv
-
 
 def get_edge_mask(
     mesh: trimesh.Trimesh,

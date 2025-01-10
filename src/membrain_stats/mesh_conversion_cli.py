@@ -124,6 +124,10 @@ def protein_concentration_wrt(
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
     ),
+    pixel_size_multiplier_positions: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, loaded positions are multiplied by this value.",
+    ),
     exclude_edges: bool = Option(  # noqa: B008
         False,
         help="If True, the edges of the membrane will be excluded from the area calculation.",
@@ -173,6 +177,7 @@ def protein_concentration_wrt(
         in_folder=in_folder,
         out_folder=out_folder,
         pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
         only_one_side=only_one_side,
@@ -199,6 +204,10 @@ def geodesic_NN(
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
     ),
+    pixel_size_multiplier_positions: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, loaded positions are multiplied by this value.",
+    ),
     num_neighbors: int = Option(  # noqa: B008
         1, help="Number of nearest neighbors to consider."
     ),
@@ -224,6 +233,19 @@ def geodesic_NN(
         False,
         help="If True, the geodesic distances will be plotted for each mesh.",
     ),
+    exclude_edges: bool = Option(  # noqa: B008
+        False,
+        help="If True, the edges of the membrane will be excluded from the nearest neighbor calculation.",
+    ),
+    edge_exclusion_width: float = Option(  # noqa: B008
+        50.0, help="Width of the edge exclusion zone in Anstrom."
+    ),
+    edge_percentile: float = Option(  # noqa: B008
+        95, help="Percentile to use for edge exclusion."
+    ),
+    store_sanity_meshes: bool = Option(  # noqa: B008
+        False, help="If True, the sanity meshes will be stored in a folder."
+    ),
 ):
     """Compute geometric distances between nearest neighbors in all membrane meshes in a folder.
 
@@ -240,6 +262,7 @@ def geodesic_NN(
         in_folder=in_folder,
         out_folder=out_folder,
         pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
         num_neighbors=num_neighbors,
         start_classes=start_classes,
         target_classes=target_classes,
@@ -247,6 +270,10 @@ def geodesic_NN(
         c2_symmetry=c2_symmetry,
         project_to_plane=project_to_plane,
         plot=plot,
+        exclude_edges=exclude_edges,
+        edge_exclusion_width=edge_exclusion_width,
+        edge_percentile=edge_percentile,
+        store_sanity_meshes=store_sanity_meshes,
     )
 
 
@@ -271,6 +298,10 @@ def geodesic_NN_wrt(
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
+    ),
+    pixel_size_multiplier_positions: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, loaded positions are multiplied by this value.",
     ),
     num_neighbors: int = Option(  # noqa: B008
         1, help="Number of nearest neighbors to consider."
@@ -313,6 +344,7 @@ def geodesic_NN_wrt(
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
         pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
         num_neighbors=num_neighbors,
         start_classes=start_classes,
         target_classes=target_classes,
@@ -337,6 +369,10 @@ def geodesic_ripley(
     pixel_size_multiplier: float = Option(  # noqa: B008
         None,
         help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, mesh vertices are multiplied by this value.",
+    ),
+    pixel_size_multiplier_positions: float = Option(  # noqa: B008
+        None,
+        help="Pixel size multiplier if mesh is not scaled in unit Angstrom. If provided, loaded positions are multiplied by this value.",
     ),
     start_classes: List[int] = Option(  # noqa: B008
         [0], help="List of classes to consider for start points."
@@ -384,6 +420,7 @@ def geodesic_ripley(
         in_folder=in_folder,
         out_folder=out_folder,
         pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
         start_classes=start_classes,
         target_classes=target_classes,
         ripley_type=ripley_type,

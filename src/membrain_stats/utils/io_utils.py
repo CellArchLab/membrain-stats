@@ -12,7 +12,6 @@ def get_mesh_filenames(in_folder: str):
     obj_files = [
         filename for filename in os.listdir(in_folder) if filename.endswith(".obj")
     ]
-
     if len(h5_files) >= len(obj_files):
         files = h5_files
     else:
