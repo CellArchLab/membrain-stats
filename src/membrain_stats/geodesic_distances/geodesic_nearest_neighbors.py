@@ -9,11 +9,15 @@ from membrain_stats.utils.io_utils import (
     get_mesh_filenames,
     get_mesh_from_file,
     get_geodesic_distance_input,
+    get_tmp_edge_files,
 )
 from membrain_stats.utils.geodesic_distance_utils import (
     compute_geodesic_distance_matrix,
 )
 from membrain_stats.utils.pairwise_orientations_utils import angle_matrix
+from membrain_stats.membrane_edges.exclude_edge_positions import (
+    mask_geodesic_edge_positions,
+)
 
 
 def geodesic_nearest_neighbors(
@@ -105,13 +109,19 @@ def geodesic_nearest_neighbors(
 
 def geodesic_nearest_neighbors_singlemb(
     filename: str,
+    out_file_edge: str,
     pixel_size_multiplier: float = None,
+    pixel_size_multiplier_positions: float = None,
     num_neighbors: int = 1,
     start_classes: List[int] = [0],
     target_classes: List[int] = [0],
     method: str = "fast",
     c2_symmetry: bool = False,
     project_to_plane: bool = False,
+    exclude_edges: bool = False,
+    edge_exclusion_width: float = 50.0,
+    edge_percentile: float = 95,
+    store_sanity_meshes: bool = False,
 ):
     """
     Compute the geodesic nearest neighbors for a single mesh.
@@ -132,9 +142,34 @@ def geodesic_nearest_neighbors_singlemb(
         The method to use for computing geodesic distances. Can be either "exact" or "fast".
     """
     mesh_dict = get_mesh_from_file(
-        filename, pixel_size_multiplier=pixel_size_multiplier
+        filename,
+        pixel_size_multiplier=pixel_size_multiplier,
+        pixel_size_multiplier_positions=pixel_size_multiplier_positions,
     )
-    mesh_dict = get_geodesic_distance_input(mesh_dict, start_classes, target_classes)
+    edge_exclusion_params = {
+        "exclude_edges": exclude_edges,
+        "edge_exclusion_width": edge_exclusion_width,
+        "edge_percentile": edge_percentile,
+        "out_file": out_file_edge,
+        "store_sanity_meshes": store_sanity_meshes,
+    }
+
+    mesh_dict = get_geodesic_distance_input(
+        mesh_dict,
+        start_classes,
+        target_classes,
+    )
+
+    if edge_exclusion_params["exclude_edges"]:
+        print("Excluding edges")
+        edge_mask = mask_geodesic_edge_positions(
+            positions=mesh_dict["positions"],
+            mesh_dict=mesh_dict,
+            edge_exclusion_params=edge_exclusion_params,
+            return_pos_mask=True,
+        )
+        mesh_dict["positions_start"] = mesh_dict["positions_start"][edge_mask]
+        mesh_dict["angles_start"] = mesh_dict["angles_start"][edge_mask]
 
     nn_data = geodesic_nearest_neighbors(
         verts=mesh_dict["verts"],
@@ -165,6 +200,7 @@ def geodesic_nearest_neighbors_folder(
     in_folder: str,
     out_folder: str,
     pixel_size_multiplier: float = None,
+    pixel_size_multiplier_positions: float = None,
     num_neighbors: int = 1,
     start_classes: List[int] = [0],
     target_classes: List[int] = [0],
@@ -172,6 +208,10 @@ def geodesic_nearest_neighbors_folder(
     c2_symmetry: bool = False,
     project_to_plane: bool = False,
     plot: bool = False,
+    exclude_edges: bool = False,
+    edge_exclusion_width: float = 50.0,
+    edge_percentile: float = 95,
+    store_sanity_meshes: bool = False,
 ):
     """
     Compute the geodesic nearest neighbors for all meshes in a folder.
@@ -194,19 +234,25 @@ def geodesic_nearest_neighbors_folder(
         The method to use for computing geodesic distances. Can be either "exact" or "fast".
     """
     filenames = get_mesh_filenames(in_folder)
-
+    out_files_edges = get_tmp_edge_files(out_folder, filenames)
     nn_outputs = [
         geodesic_nearest_neighbors_singlemb(
             filename,
+            out_file_edge,
             pixel_size_multiplier=pixel_size_multiplier,
+            pixel_size_multiplier_positions=pixel_size_multiplier_positions,
             num_neighbors=num_neighbors,
             start_classes=start_classes,
             target_classes=target_classes,
             method=method,
             c2_symmetry=c2_symmetry,
             project_to_plane=project_to_plane,
+            exclude_edges=exclude_edges,
+            edge_exclusion_width=edge_exclusion_width,
+            edge_percentile=edge_percentile,
+            store_sanity_meshes=store_sanity_meshes,
         )
-        for filename in filenames
+        for filename, out_file_edge in zip(filenames, out_files_edges)
     ]
 
     mesh_dicts = [data[0] for data in nn_outputs]
