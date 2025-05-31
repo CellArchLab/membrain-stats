@@ -19,10 +19,12 @@ def geodesic_ripleys_folder(
     in_folder: str,
     out_folder: str,
     pixel_size_multiplier: float = None,
+    pixel_size_multiplier_positions: float = None,
     start_classes: List[int] = [0],
     target_classes: List[int] = [0],
     ripley_type: str = "O",
     num_bins: int = 100,
+    bin_size: float = None,
     method: str = "fast",
     exclude_edges: bool = False,
     edge_exclusion_width: float = 50.0,
@@ -34,7 +36,11 @@ def geodesic_ripleys_folder(
 
     # load mehes
     mesh_dicts = [
-        get_mesh_from_file(filename, pixel_size_multiplier=pixel_size_multiplier)
+        get_mesh_from_file(
+            filename,
+            pixel_size_multiplier=pixel_size_multiplier,
+            pixel_size_multiplier_positions=pixel_size_multiplier_positions,
+        )
         for filename in filenames
     ]
 
@@ -65,7 +71,10 @@ def geodesic_ripleys_folder(
 
     # aggregate computed values to output global ripley's statistics
     ripley_stats = aggregate_ripleys_stats(
-        ripley_stats=ripley_stats, ripley_type=ripley_type, num_bins=num_bins
+        ripley_stats=ripley_stats,
+        ripley_type=ripley_type,
+        num_bins=num_bins,
+        bin_size=bin_size,
     )
 
     # store in star file
