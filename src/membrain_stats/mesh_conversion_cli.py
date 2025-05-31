@@ -387,6 +387,7 @@ def geodesic_ripley(
     num_bins: int = Option(  # noqa: B008
         50, help="Into how many bins should the ripley statistics be split?"
     ),
+    bin_size: float = Option(None, help="Size of the bins in Anstrom."),  # noqa: B008
     method: str = Option(  # noqa: B008
         "fast",
         help="Method to use for computing geodesic distances. Can be either 'exact' or 'fast'.",
@@ -425,6 +426,7 @@ def geodesic_ripley(
         target_classes=target_classes,
         ripley_type=ripley_type,
         num_bins=num_bins,
+        bin_size=bin_size,
         method=method,
         exclude_edges=exclude_edges,
         edge_exclusion_width=edge_exclusion_width,
