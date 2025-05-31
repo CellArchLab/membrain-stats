@@ -32,7 +32,9 @@ def get_ripleys_inputs(ripley_stats: List[dict]):
     return distance_matrices, mesh_distances, barycentric_areas
 
 
-def get_xaxis_distances(distance_matrices: List[np.array], num_bins: int):
+def get_xaxis_distances(
+    distance_matrices: List[np.array], num_bins: int, bin_size: float = None
+):
     # flatten protein-protein distances
     all_distances = np.concatenate(
         [np.ravel(distance_matrix) for distance_matrix in distance_matrices]
@@ -44,8 +46,14 @@ def get_xaxis_distances(distance_matrices: List[np.array], num_bins: int):
     all_distances = all_distances[sort_indices]
 
     # split distances into bins
+    if bin_size is not None:
+        max_val = np.max(all_distances[all_distances < np.inf])
+        bins = np.arange(0, max_val, bin_size)
+    else:
+        bins = num_bins
+
     distance_histogram, bin_edges = np.histogram(
-        all_distances[all_distances < np.inf], bins=num_bins
+        all_distances[all_distances < np.inf], bins=bins
     )
     all_distances = bin_edges[:-1]
 
@@ -147,7 +155,10 @@ def define_xy_values(
 
 
 def aggregate_ripleys_stats(
-    ripley_stats: List[dict], ripley_type: str = "L", num_bins: int = 50
+    ripley_stats: List[dict],
+    ripley_type: str = "L",
+    num_bins: int = 50,
+    bin_size: float = None,
 ):
     assert ripley_type in ["K", "L", "O"]
     # extract relevant arrays
@@ -188,7 +199,7 @@ def aggregate_ripleys_stats(
 
     # split protein-protein distances into bins
     all_distances, distance_histogram = get_xaxis_distances(
-        distance_matrices=distance_matrices, num_bins=num_bins
+        distance_matrices=distance_matrices, num_bins=num_bins, bin_size=bin_size
     )
     protein_per_distance = distance_histogram / avg_starting_points
 
